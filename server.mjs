@@ -26,7 +26,6 @@ let retriever = null;
   );
   retriever = vectorStore.asRetriever();
   console.log(`[NEX] Cache vetorial atualizado com ${docs.length} pedaços.`);
-}
 
 // Inicializa antes de aceitar requisições
 retriever = await gerarVectorStoreDoGoogleDocs();
