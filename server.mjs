@@ -3,7 +3,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import { GoogleDocsLoader } from './googleDocsLoader.mjs';
+import { loadGoogleDoc } from './googleDocsLoader.mjs';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
