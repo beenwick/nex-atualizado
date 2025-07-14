@@ -30,7 +30,7 @@ async function gerarVectorStoreDoGoogleDocs() {
 }
 
 // Inicializa antes de aceitar requisições
-await gerarVectorStoreDoGoogleDocs();
+retriever = await gerarVectorStoreDoGoogleDocs();
 
 const llm = new ChatOpenAI({ modelName: "gpt-4", temperature: 0.7 });
 
