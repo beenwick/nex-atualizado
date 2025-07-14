@@ -1,3 +1,4 @@
+
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
@@ -35,80 +36,42 @@ const chain = RunnableSequence.from([
 const memory = new Map();
 
 function extrairNome(frase) {
-  const match = frase.match(/(?:meu nome é|me chamo|sou o|sou a|nome:?)\s*([\wÀ-ÿ]+)/i);
-  if (match) return match[1];
-  if (frase.trim().split(/\s+/).length === 1) return frase.trim();
-  return null;
-}
-
-function gerarMensagemInicial() {
-  const variações = [
-    "E aí, quem tá aí do outro lado da tela?",
-    "Se for pra eu queimar meus circuitos, quero pelo menos saber com quem tô falando. Nome?",
-    "Antes de mais nada... quem é você, bonitão(a)?",
-    "Diz aí seu nome, vai que a gente vira melhores amigos.",
-    "Só me diga seu nome e eu já te conto meus segredos."
-  ];
-  return variações[Math.floor(Math.random() * variações.length)];
+  const match = frase.match(/(?:meu nome é|me chamo|sou o|sou a|nome[:\s]*)([A-Za-zÀ-ÿ]+)/i);
+  return match ? match[1] : null;
 }
 
 app.post("/ask", async (req, res) => {
-  try {
-    const { message, sessionId } = req.body;
+  const { message, sessionId } = req.body;
+  const nomeDetectado = extrairNome(message);
 
-    if (!sessionId) {
-      return res.status(400).json({ error: "sessionId é obrigatório." });
-    }
-
-    const contexto = memory.get(sessionId) || {
-      nome: null,
-      chat_history: [],
-      createdAt: Date.now(),
-      saudado: false
-    };
-
-    // Resetar a sessão após 30 minutos
-    if (Date.now() - contexto.createdAt > 30 * 60 * 1000) {
-      memory.delete(sessionId);
-      return res.json({ response: gerarMensagemInicial() });
-    }
-
-    let resposta = "";
-
-    // Se ainda não saudou e não tem nome
-    if (!contexto.saudado && !contexto.nome) {
-      const nome = extrairNome(message);
-      if (nome) {
-        contexto.nome = nome;
-        contexto.saudado = true;
-        resposta = `Beleza, ${nome}. Agora vê se me ajuda: o que você quer saber da Forma Nexus?`;
-      } else {
-        resposta = gerarMensagemInicial();
-      }
-    } else {
-      try {
-        const respostaIA = await chain.invoke({
-          input: message,
-          chat_history: contexto.chat_history,
-        });
-
-        resposta = respostaIA.content;
-
-        contexto.chat_history.push(new HumanMessage(message));
-        contexto.chat_history.push(new AIMessage(resposta));
-      } catch (error) {
-        console.error("[NEX] Erro na resposta:", error);
-        resposta = "Meus circuitos deram um tilt aqui... tenta de novo?";
-      }
-    }
-
-    memory.set(sessionId, contexto);
-
-    res.json({ response: resposta });
-  } catch (error) {
-    console.error("[NEX] Erro geral:", error);
-    res.status(500).json({ error: "Erro interno do servidor" });
+  if (nomeDetectado) {
+    memory.set(sessionId, [
+      ...(memory.get(sessionId) || []),
+      new HumanMessage(message),
+      new AIMessage(`Prazer, ${nomeDetectado}! Anotado aqui 💜`)
+    ]);
+    return res.json({ reply: `Prazer, ${nomeDetectado}! Anotado aqui 💜` });
   }
+
+  const retriever = await carregarRetriever();
+  const docs = await retriever.getRelevantDocuments(message);
+  const contexto = docs.map(doc => doc.pageContent).join("\n\n");
+
+  const response = await chain.invoke({
+    input: message,
+    chat_history: memory.get(sessionId) || [],
+    contexto,
+  });
+
+  const resposta = response?.content || "Hmm... não consegui pensar em nada agora 🤔";
+
+  memory.set(sessionId, [
+    ...(memory.get(sessionId) || []),
+    new HumanMessage(message),
+    new AIMessage(resposta)
+  ]);
+
+  res.json({ reply: resposta });
 });
 
 app.listen(port, () => {
