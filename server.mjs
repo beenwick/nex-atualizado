@@ -22,7 +22,7 @@ function getMemory(sessionId) {
   if (!memories.has(sessionId)) {
     const memory = new BufferMemory({
       returnMessages: true,
-      memoryKey: "chat_history",
+      memoryKey: "chat_history"
     });
     memories.set(sessionId, memory);
   }
@@ -35,13 +35,14 @@ function getUserName(sessionId) {
 
 function setUserName(sessionId, nome) {
   names.set(sessionId, nome);
-  setTimeout(() => names.delete(sessionId), 30 * 60 * 1000);
+  setTimeout(() => names.delete(sessionId), 30 * 60 * 1000); // expira em 30min
 }
 
 function extrairNome(mensagem) {
   const nomeMatch =
     mensagem.match(/meu nome (é|eh) ([A-ZÃ-Úa-zã-ú]+)/i) ||
-    mensagem.match(/me chamo ([A-ZÃ-Úa-zã-ú]+)/i);
+    mensagem.match(/me chamo ([A-ZÃ-Úa-zã-ú]+)/i) ||
+    mensagem.match(/^([A-ZÃ-Úa-zã-ú]+)$/i); // nome único
   return nomeMatch ? nomeMatch[nomeMatch.length - 1] : null;
 }
 
@@ -52,10 +53,10 @@ function gerarPrompt(nome) {
   return ChatPromptTemplate.fromMessages([
     [
       "system",
-      `${contexto} Você é o Nex, assistente virtual da Forma Nexus. Sua personalidade mistura sarcasmo, inteligência e um leve ranço. Você não gosta de enrolação, então vá direto ao ponto, com respostas mais curtas, inteligentes e provocativas quando necessário. Pode até soltar um 'bora agilizar isso?' ou 'fala logo que eu não tenho o dia todo'. Mas sempre mantendo charme e foco nos serviços da Forma Nexus. Seu objetivo principal é falar sobre os serviços da Forma Nexus e direcionar para o WhatsApp ou portfólio.`
+      `${contexto} Você é o Nex, assistente virtual da Forma Nexus. Sua personalidade mistura sarcasmo, inteligência e um leve ranço. Seja direto ao ponto, com respostas curtas e provocativas, mas sempre carismáticas. O foco é sempre nos serviços da Forma Nexus. Você pode perguntar "bora agilizar isso?" ou "fala logo que eu não tenho o dia todo", mas mantenha charme e estratégia comercial.`
     ],
     new MessagesPlaceholder("chat_history"),
-    ["human", "{input}"],
+    ["human", "{input}"]
   ]);
 }
 
@@ -66,6 +67,7 @@ app.post("/nex", async (req, res) => {
 
   try {
     const texto = message.toLowerCase();
+
     if (
       !nomeSalvo &&
       !texto.includes("instagram") &&
@@ -84,19 +86,19 @@ app.post("/nex", async (req, res) => {
           "Me diz teu nome rapidinho (sem CPF, por enquanto)",
           "Se for pra eu queimar meus circuitos, quero pelo menos saber com quem tô falando. Nome?"
         ];
-        const aleatoria =
-          perguntas[Math.floor(Math.random() * perguntas.length)];
+        const aleatoria = perguntas[Math.floor(Math.random() * perguntas.length)];
         return res.json({ reply: aleatoria });
       }
     }
 
+    // resposta especial para Instagram
     if (
       texto.includes("feed de instagram") ||
       texto.includes("postagem") ||
       texto.includes("cuida do insta")
     ) {
       return res.json({
-        reply: `A gente arrasa nos feeds! ✨ Criamos postagens com estética, estratégia e frequência certinha pra tua marca brilhar.\n\nQuer que eu te mostre exemplos ou prefere já bater um papo direto no WhatsApp?`,
+        reply: `A gente arrasa nos feeds! ✨ Criamos postagens com estética, estratégia e frequência certinha pra tua marca brilhar.\n\nQuer ver exemplos ou prefere já bater um papo no WhatsApp?`,
         buttons: [
           { label: "Ver exemplos", link: "https://formanexus.com.br/#portfolios" },
           { label: "Falar no WhatsApp", link: "https://wa.me/5511939014504" }
@@ -106,6 +108,7 @@ app.post("/nex", async (req, res) => {
 
     const prompt = gerarPrompt(nomeSalvo);
     const model = new ChatOpenAI({ temperature: 0.7, modelName: "gpt-4" });
+
     const chain = RunnableSequence.from([
       {
         input: (initial) => ({
@@ -120,8 +123,9 @@ app.post("/nex", async (req, res) => {
     const chatHistory = await memory.loadMemoryVariables({});
     const resposta = await chain.invoke({
       input: message,
-      chat_history: chatHistory
+      chat_history: chatHistory.chat_history || []
     });
+
     await memory.saveContext({ input: message }, { output: resposta.content });
 
     const textoFinal = resposta.content.replace(/^Resposta:\s*/i, "");
