@@ -1,4 +1,10 @@
+import { google } from 'googleapis';
+import { GoogleAuth } from 'google-auth-library';
 import { Document } from 'langchain/document';
+
+const SCOPES = ['https://www.googleapis.com/auth/documents.readonly'];
+const DOC_ID = process.env.GOOGLE_DOC_ID;
+const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
 
 export async function loadGoogleDoc() {
   const auth = new GoogleAuth({
@@ -17,6 +23,5 @@ export async function loadGoogleDoc() {
     .join('\n')
     .trim();
 
-  // ✅ Retorna diretamente como Document, sem gravar no disco
   return [new Document({ pageContent: textoExtraido })];
 }
