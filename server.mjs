@@ -1,4 +1,3 @@
-// server.mjs
 
 import express from 'express';
 import dotenv from 'dotenv';
@@ -11,22 +10,17 @@ import { ChatOpenAI } from '@langchain/openai';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { VectorStoreRetrieverMemory } from 'langchain/memory';
 
-// Config
 dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
-const port = process.env.PORT || 3000;
 
-let retriever; // Cache global de memória vetorial
+const port = process.env.PORT || 3000;
+let retriever = null;
 
 async function gerarVectorStoreDoGoogleDocs() {
   try {
-    const loader = new GoogleDocsLoader({
-      documentId: process.env.GOOGLE_DOC_ID,
-    });
-
-    const docs = await loader.load();
+    const docs = await loadGoogleDoc();
     const splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 1000,
       chunkOverlap: 200,
@@ -46,43 +40,33 @@ async function gerarVectorStoreDoGoogleDocs() {
   }
 }
 
-// Atualiza a cada 30 minutos (1800000 ms)
 await gerarVectorStoreDoGoogleDocs();
-setInterval(gerarVectorStoreDoGoogleDocs, 30 * 60 * 1000);
 
-const memory = new VectorStoreRetrieverMemory({
-  retriever,
-  memoryKey: 'chat_history',
-});
-
-const model = new ChatOpenAI({
-  modelName: 'gpt-4',
-  temperature: 0.7,
-});
+const llm = new ChatOpenAI({ modelName: 'gpt-4', temperature: 0.7 });
 
 const chain = RunnableSequence.from([
   async (input) => {
-    const context = await memory.loadMemoryVariables({ prompt: input });
+    if (!retriever) throw new Error('Retriever não inicializado.');
+    const relevantDocs = await retriever.getRelevantDocuments(input);
     return {
       input,
-      chat_history: context.chat_history,
+      context: relevantDocs.map((doc) => doc.pageContent).join('\n'),
     };
   },
-  model,
+  llm,
 ]);
 
 app.post('/nex', async (req, res) => {
-  const { message, sessionId } = req.body;
+  const pergunta = req.body.pergunta;
   try {
-    const resposta = await chain.invoke(message);
-    await memory.saveContext({ input: message }, { output: resposta.content });
-    res.json({ reply: resposta.content });
-  } catch (error) {
-    console.error('[NEX] Erro ao processar mensagem:', error);
-    res.status(500).json({ reply: 'Erro ao responder. Tente novamente mais tarde.' });
+    const resposta = await chain.invoke(pergunta);
+    res.json({ resposta: resposta.content });
+  } catch (err) {
+    console.error('[NEX] Erro na resposta:', err);
+    res.status(500).json({ erro: 'Erro ao gerar resposta.' });
   }
 });
 
 app.listen(port, () => {
-  console.log(`[NEX] Servidor rodando na porta ${port}`);
+  console.log(`[NEX] Rodando em http://localhost:${port}`);
 });
