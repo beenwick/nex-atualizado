@@ -6,7 +6,6 @@ import { ChatOpenAI } from "@langchain/openai";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 import { BufferMemory } from "langchain/memory";
-import { retriever } from "./staticLoader.mjs";
 
 dotenv.config();
 
