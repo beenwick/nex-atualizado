@@ -31,7 +31,6 @@ export async function loadGoogleDoc() {
 
   // Salvar texto em um arquivo temporário
   const tempFilePath = './docs/google-doc-temp.txt';
-  fs.writeFileSync(tempFilePath, textoExtraido, 'utf-8');
 
   // Usar loader da LangChain para transformar em documento
   const loader = new TextLoader(tempFilePath);
