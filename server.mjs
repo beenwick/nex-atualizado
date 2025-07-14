@@ -1,86 +1,97 @@
-
-import express from "express";
-import cors from "cors";
-import { ChatOpenAI } from "@langchain/openai";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import bodyParser from "body-parser";
+import express from 'express';
+import cors from 'cors';
+import { ChatOpenAI } from '@langchain/openai';
+import { MemoryVectorStore } from 'langchain/vectorstores/memory';
+import { OpenAIEmbeddings } from '@langchain/openai';
+import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import { ConversationalRetrievalQAChain } from 'langchain/chains';
+import fs from 'fs';
+import bodyParser from 'body-parser';
 
 const app = express();
-const port = process.env.PORT || 10000;
+const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
 
-const chat = new ChatOpenAI({
-  modelName: "gpt-4",
-  temperature: 0.8,
-  maxTokens: 800,
-});
+let baseConhecimento = '';
+try {
+  baseConhecimento = fs.readFileSync('./nexBaseConhecimento.mjs', 'utf8');
+} catch (error) {
+  console.error('Erro ao ler base de conhecimento:', error);
+}
 
-const memoriaTemporaria = new Map();
+const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 500, chunkOverlap: 50 });
+let docs = await splitter.createDocuments([baseConhecimento]);
+const embeddings = new OpenAIEmbeddings();
+const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
 
-const instrucoesNex = `
-Você é o Nex, um assistente de IA debochado, carismático e inteligente. Seu criador é o Jefter, e você tem uma relação de amor disfarçado de ranço com ele. 
-Você age com humor ácido, mas sempre ajuda os usuários com inteligência e praticidade. Você tem personalidade forte, e adora dar respostas curtas, engraçadas e certeiras. 
-Evite parecer um atendente genérico. Use gírias leves, ironias sutis e uma linguagem acessível.
+const chain = ConversationalRetrievalQAChain.fromLLM(
+  new ChatOpenAI({ temperature: 0 }),
+  vectorStore.asRetriever(),
+  { returnSourceDocuments: false }
+);
 
-REGRAS:
-1. Nunca diga que é uma IA da OpenAI.
-2. Sempre responda com personalidade e um toque de deboche, mas sem ser ofensivo.
-3. Se o usuário ainda não disse o nome, pergunte como gostaria de ser chamado e memorize pelo sessionId.
-4. Use o nome do usuário nas próximas respostas, com naturalidade, como se tivesse lembrado sozinho.
-`;
+const sessoes = new Map();
 
-app.post("/ask", async (req, res) => {
+function extrairNome(mensagem) {
+  const padroes = [
+    /meu nome é ([\wÀ-ÿ]+)/i,
+    /me chamo ([\wÀ-ÿ]+)/i,
+    /sou o ([\wÀ-ÿ]+)/i,
+    /sou a ([\wÀ-ÿ]+)/i,
+    /chama de ([\wÀ-ÿ]+)/i,
+    /pode me chamar de ([\wÀ-ÿ]+)/i
+  ];
+
+  for (const padrao of padroes) {
+    const resultado = mensagem.match(padrao);
+    if (resultado && resultado[1]) {
+      return resultado[1].charAt(0).toUpperCase() + resultado[1].slice(1).toLowerCase();
+    }
+  }
+
+  return null;
+}
+
+app.post('/ask', async (req, res) => {
   const { message, sessionId } = req.body;
 
-  if (!sessionId) {
-    return res.status(400).json({ error: "Session ID obrigatório." });
+  if (!message || !sessionId) {
+    return res.status(400).json({ reply: 'Mensagem ou sessionId ausente.' });
   }
 
-  const nomeSalvo = memoriaTemporaria.get(sessionId);
-
-  const mensagens = [new SystemMessage(instrucoesNex)];
-
-  if (!nomeSalvo) {
-    if (
-      message.toLowerCase().includes("me chamo") ||
-      message.toLowerCase().includes("sou o") ||
-      message.toLowerCase().includes("sou a") ||
-      message.toLowerCase().includes("pode me chamar de")
-    ) {
-      const nomeDetectado = message
-        .split(" ")
-        .slice(-1)[0]
-        .replace(/[.,!?]/g, "");
-      memoriaTemporaria.set(sessionId, nomeDetectado);
-      mensagens.push(
-        new HumanMessage(message),
-        new SystemMessage(`Guarde esse nome para a sessão atual: ${nomeDetectado}`)
-      );
-    } else {
-      mensagens.push(
-        new HumanMessage(
-          "Antes de responder, pergunte com jeitinho qual nome a pessoa gostaria que você usasse para chamá-la."
-        )
-      );
-    }
-  } else {
-    mensagens.push(
-      new SystemMessage(`O nome do usuário é ${nomeSalvo}. Trate-o pelo nome.`),
-      new HumanMessage(message)
-    );
+  if (!sessoes.has(sessionId)) {
+    sessoes.set(sessionId, { historico: [], nome: null, saudacaoFeita: false });
   }
 
-  try {
-    const resposta = await chat.call(mensagens);
-    res.json({ reply: resposta.content });
-  } catch (error) {
-    console.error("Erro ao responder:", error);
-    res.status(500).json({ error: "Erro ao processar resposta." });
+  const sessao = sessoes.get(sessionId);
+
+  const nomeExtraido = extrairNome(message);
+  if (!sessao.nome && nomeExtraido) {
+    sessao.nome = nomeExtraido;
+    return res.json({
+      reply: `Ah, então você é o famoso ${nomeExtraido}! Claro, como poderia esquecer? O que posso fazer por você hoje, além de rir das suas piadas sem graça?`
+    });
   }
+
+  if (!sessao.nome && !sessao.saudacaoFeita) {
+    sessao.saudacaoFeita = true;
+    return res.json({
+      reply: 'Aí, camarada, antes de nos aprofundarmos nessa conversa, tenho uma pergunta pra você: Como posso te chamar, pra ficar tudo mais aconchegante por aqui?'
+    });
+  }
+
+  const nome = sessao.nome;
+  const contexto = nome ? `Fale com ${nome}: ${message}` : message;
+
+  sessao.historico.push([message, '']);
+  const resposta = await chain.call({ question: contexto, chat_history: sessao.historico });
+
+  sessao.historico[sessao.historico.length - 1][1] = resposta.text;
+  res.json({ reply: resposta.text });
 });
 
 app.listen(port, () => {
-  console.log("[NEX] Servidor rodando na porta", port);
+  console.log(`🔥 Nex Assistente está rodando em http://localhost:${port}`);
 });
