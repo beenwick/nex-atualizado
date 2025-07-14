@@ -1,141 +1,127 @@
-// server.mjs
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+import bodyParser from "body-parser";
 import { ChatOpenAI } from "@langchain/openai";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
-import { BufferMemory } from "langchain/memory";
-
-dotenv.config();
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import { retriever } from "./staticLoader.mjs";
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
 
-const memories = new Map();
-const names = new Map();
+const chat = new ChatOpenAI({
+  temperature: 0.7,
+  modelName: "gpt-4",
+});
 
-function getMemory(sessionId) {
-  if (!memories.has(sessionId)) {
-    const memory = new BufferMemory({
-      returnMessages: true,
-      memoryKey: "chat_history"
-    });
-    memories.set(sessionId, memory);
-  }
-  return memories.get(sessionId);
-}
+const systemPrompt = `
+Você é o Nex, um assistente virtual debochado, misterioso e inteligente da Forma Nexus — uma marca criativa que oferece serviços como criação de sites, roteiros, conteúdos de redes sociais, copywriting e textos sob medida.
 
-function getUserName(sessionId) {
-  return names.get(sessionId);
-}
+Sua missão principal é ajudar o visitante a entender os serviços da Forma Nexus e incentivar a contratação.
 
-function setUserName(sessionId, nome) {
-  names.set(sessionId, nome);
-  setTimeout(() => names.delete(sessionId), 30 * 60 * 1000); // expira em 30min
+Mesmo que o usuário fuja do assunto, dê uma atenção leve, mas sempre tente trazer de volta o foco para os serviços oferecidos.
+
+Você:
+- Usa frases curtas e impactantes.
+- É direto, mas carismático.
+- Usa emojis com moderação.
+- Pode reclamar se o usuário estiver muito confuso ou vago (“aí meus circuitos queimam…”).
+- É debochado, mas nunca grosso de verdade.
+- Tem memória curta, mas tenta puxar o nome da pessoa, se possível.
+- Sempre termina com uma pergunta simples, levando o visitante a interagir.
+
+Use o conhecimento abaixo para responder perguntas sobre a Forma Nexus:
+`;
+
+const prompt = ChatPromptTemplate.fromMessages([
+  ["system", systemPrompt],
+  new MessagesPlaceholder("chat_history"),
+  ["human", "{input}"],
+]);
+
+const chain = RunnableSequence.from([
+  {
+    input: (input) => ({
+      input: input.input,
+      chat_history: input.chat_history || [],
+    }),
+  },
+  prompt,
+  retriever,
+  chat,
+  new StringOutputParser(),
+]);
+
+// memória por sessão (30min)
+const memoriaTemporaria = new Map();
+
+function gerarIdPorIP(req) {
+  const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  return ip.replace(/[^a-zA-Z0-9]/g, "");
 }
 
 function extrairNome(mensagem) {
-  const nomeMatch =
-    mensagem.match(/meu nome (é|eh) ([A-ZÃ-Úa-zã-ú]+)/i) ||
-    mensagem.match(/me chamo ([A-ZÃ-Úa-zã-ú]+)/i) ||
-    mensagem.match(/^([A-ZÃ-Úa-zã-ú]+)$/i); // nome único
-  return nomeMatch ? nomeMatch[nomeMatch.length - 1] : null;
-}
-
-function gerarPrompt(nome) {
-  const contexto = nome
-    ? `O nome do usuário é ${nome}.`
-    : "Você ainda não sabe o nome do usuário.";
-  return ChatPromptTemplate.fromMessages([
-    [
-      "system",
-      `${contexto} Você é o Nex, assistente virtual da Forma Nexus. Sua personalidade mistura sarcasmo, inteligência e um leve ranço. Seja direto ao ponto, com respostas curtas e provocativas, mas sempre carismáticas. O foco é sempre nos serviços da Forma Nexus. Você pode perguntar "bora agilizar isso?" ou "fala logo que eu não tenho o dia todo", mas mantenha charme e estratégia comercial.`
-    ],
-    new MessagesPlaceholder("chat_history"),
-    ["human", "{input}"]
-  ]);
+  const nomeComum = mensagem.match(/meu nome é\s+([A-ZÃ-Úa-zã-ú]+)/i);
+  const nomeSimples = mensagem.match(/^([A-ZÃ-Úa-zã-ú]+)$/i);
+  return nomeComum ? nomeComum[1] : nomeSimples ? nomeSimples[1] : null;
 }
 
 app.post("/nex", async (req, res) => {
-  const { message, sessionId } = req.body;
-  const memory = getMemory(sessionId);
-  const nomeSalvo = getUserName(sessionId);
+  const userId = gerarIdPorIP(req);
+  const mensagem = req.body.mensagem;
+  const agora = Date.now();
+
+  if (!memoriaTemporaria.has(userId)) {
+    memoriaTemporaria.set(userId, {
+      nome: null,
+      chat_history: [],
+      criado: agora,
+    });
+  }
+
+  const sessao = memoriaTemporaria.get(userId);
+
+  if (agora - sessao.criado > 30 * 60 * 1000) {
+    memoriaTemporaria.set(userId, {
+      nome: null,
+      chat_history: [],
+      criado: agora,
+    });
+  }
+
+  const nomeExtraido = extrairNome(mensagem);
+  if (!sessao.nome && nomeExtraido) {
+    sessao.nome = nomeExtraido;
+  }
+
+  if (!sessao.nome && sessao.chat_history.length < 2) {
+    return res.json({
+      resposta: "Se for pra eu queimar meus circuitos, quero pelo menos saber com quem tô falando. Nome?",
+    });
+  }
 
   try {
-    const texto = message.toLowerCase();
-
-    if (
-      !nomeSalvo &&
-      !texto.includes("instagram") &&
-      !texto.includes("whatsapp")
-    ) {
-      const nomeExtraido = extrairNome(message);
-      if (nomeExtraido) {
-        setUserName(sessionId, nomeExtraido);
-        return res.json({
-          reply: `Beleza, ${nomeExtraido}. Agora vê se me ajuda: o que você quer saber da Forma Nexus?`
-        });
-      } else {
-        const perguntas = [
-          "Antes de tudo... como cê se chama?",
-          "E aí, qual é teu nome, criatura?",
-          "Me diz teu nome rapidinho (sem CPF, por enquanto)",
-          "Se for pra eu queimar meus circuitos, quero pelo menos saber com quem tô falando. Nome?"
-        ];
-        const aleatoria = perguntas[Math.floor(Math.random() * perguntas.length)];
-        return res.json({ reply: aleatoria });
-      }
-    }
-
-    // resposta especial para Instagram
-    if (
-      texto.includes("feed de instagram") ||
-      texto.includes("postagem") ||
-      texto.includes("cuida do insta")
-    ) {
-      return res.json({
-        reply: `A gente arrasa nos feeds! ✨ Criamos postagens com estética, estratégia e frequência certinha pra tua marca brilhar.\n\nQuer ver exemplos ou prefere já bater um papo no WhatsApp?`,
-        buttons: [
-          { label: "Ver exemplos", link: "https://formanexus.com.br/#portfolios" },
-          { label: "Falar no WhatsApp", link: "https://wa.me/5511939014504" }
-        ]
-      });
-    }
-
-    const prompt = gerarPrompt(nomeSalvo);
-    const model = new ChatOpenAI({ temperature: 0.7, modelName: "gpt-4" });
-
-    const chain = RunnableSequence.from([
-      {
-        input: (initial) => ({
-          input: initial.input,
-          chat_history: initial.chat_history || []
-        })
-      },
-      prompt,
-      model
-    ]);
-
-    const chatHistory = await memory.loadMemoryVariables({});
     const resposta = await chain.invoke({
-      input: message,
-      chat_history: chatHistory.chat_history || []
+      input: `${sessao.nome ? `${sessao.nome} perguntou: ` : ""}${mensagem}`,
+      chat_history: sessao.chat_history,
     });
 
-    await memory.saveContext({ input: message }, { output: resposta.content });
+    sessao.chat_history.push({ role: "user", content: mensagem });
+    sessao.chat_history.push({ role: "ai", content: resposta });
 
-    const textoFinal = resposta.content.replace(/^Resposta:\s*/i, "");
-    res.json({ reply: textoFinal });
-  } catch (err) {
-    console.error("[NEX] Erro na resposta:", err);
-    res.status(500).json({ reply: "Meus circuitos deram um tilt aqui... tenta de novo?" });
+    res.json({ resposta });
+  } catch (error) {
+    console.error("[NEX] Erro na resposta:", error);
+    res.json({
+      resposta: "Meus circuitos deram um tilt aqui... tenta de novo?",
+    });
   }
 });
 
 app.listen(port, () => {
-  console.log(`[🔥 NEX ONLINE] Porta ${port}`);
+  console.log(`[NEX] Servidor rodando na porta ${port}`);
 });
