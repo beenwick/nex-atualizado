@@ -48,7 +48,9 @@ let retriever = null;
       }
       try {
         const response = await chain.invoke(message);
-        return res.json({ reply: response.content });
+        let reply = response.content?.trim() || "";
+        reply = reply.replace(/^resposta:\s*/i, ""); // Remove prefixo "Resposta:" se existir
+        return res.json({ reply });
       } catch (err) {
         console.error("[NEX] Erro na resposta:", err);
         return res.status(500).json({ reply: "Erro interno ao responder." });
