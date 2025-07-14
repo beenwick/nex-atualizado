@@ -1,14 +1,13 @@
-
-import express from 'express';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import { loadGoogleDoc } from './googleDocsLoader.mjs';
-import { OpenAIEmbeddings } from '@langchain/openai';
-import { MemoryVectorStore } from 'langchain/vectorstores/memory';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import { ChatOpenAI } from '@langchain/openai';
-import { RunnableSequence } from '@langchain/core/runnables';
-import { VectorStoreRetrieverMemory } from 'langchain/memory';
+// 1. Imports externos
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import { gerarVectorStoreDoGoogleDocs } from "./googleDocsLoader.mjs";
+import { ChatOpenAI } from "@langchain/openai";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import { OpenAIEmbeddings } from "@langchain/openai";
+import { ConversationalRetrievalQAChain } from "langchain/chains";
+import { BufferMemory } from "langchain/memory";
 
 dotenv.config();
 const app = express();
