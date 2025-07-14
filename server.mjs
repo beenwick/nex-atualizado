@@ -1,4 +1,4 @@
-// 1. Imports externos
+// 1. Imports externos 
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -8,6 +8,7 @@ import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { ConversationalRetrievalQAChain } from "langchain/chains";
 import { BufferMemory } from "langchain/memory";
+import { RunnableSequence } from "@langchain/core/runnables";
 
 dotenv.config();
 const app = express();
@@ -17,27 +18,6 @@ app.use(express.json());
 const port = process.env.PORT || 3000;
 let retriever = null;
 
-async function gerarVectorStoreDoGoogleDocs() {
-  try {
-    const docs = await loadGoogleDoc();
-    const splitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 1000,
-      chunkOverlap: 200,
-    });
-
-    const splitDocs = await splitter.splitDocuments(docs);
-
-    const vectorStore = await MemoryVectorStore.fromDocuments(
-      splitDocs,
-      new OpenAIEmbeddings()
-    );
-
-    retriever = vectorStore.asRetriever();
-    console.log(`[NEX] Cache vetorial atualizado com ${splitDocs.length} pedaços.`);
-  } catch (error) {
-    console.error('[NEX] Erro ao atualizar vector store:', error);
-  }
-}
 
 await gerarVectorStoreDoGoogleDocs();
 
