@@ -5,7 +5,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
-import { retriever } from "./staticLoader.mjs";
+import { carregarRetriever } from "./staticLoader.mjs";
 
 const app = express();
 const port = process.env.PORT || 3000;
