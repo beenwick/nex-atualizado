@@ -4,28 +4,7 @@ import { Document } from 'langchain/document';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import { google } from 'googleapis';
-
-async function loadGoogleDoc() {
-  const auth = new google.auth.GoogleAuth({
-    credentials: JSON.parse(fs.readFileSync('./keys/nex-docs-reader.json', 'utf8')),
-    scopes: ['https://www.googleapis.com/auth/documents.readonly'],
-  });
-
-  const client = await auth.getClient();
-  const docs = google.docs({ version: 'v1', auth: client });
-
-  const res = await docs.documents.get({
-    documentId: process.env.GOOGLE_DOC_ID,
-  });
-
-  const content = res.data.body.content || [];
-  const text = content
-    .map(block => block.paragraph?.elements?.map(e => e.textRun?.content).join('') || '')
-    .join('\n');
-
-  return text;
-}
+import { loadGoogleDoc } from './googleDocsLoader.mjs'; // ⬅️ agora usa o loader certo
 
 async function generateEmbeddings() {
   console.log('📄 Carregando conteúdo do Google Docs...');

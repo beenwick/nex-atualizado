@@ -5,7 +5,7 @@
   "main": "server.mjs",
   "type": "module",
   "scripts": {
-    "start": "node server.mjs"
+    "start": "NODE_OPTIONS=--openssl-legacy-provider node server.mjs"
   },
   "keywords": [],
   "author": "",

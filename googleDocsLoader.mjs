@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config(); // necessário para rodar localmente
+
 import fs from 'fs';
 import { google } from 'googleapis';
 import { Document } from 'langchain/document';
@@ -5,10 +8,9 @@ import { GoogleAuth } from 'google-auth-library';
 import { TextLoader } from 'langchain/document_loaders/fs/text';
 
 const SCOPES = ['https://www.googleapis.com/auth/documents.readonly'];
-const DOC_ID = '1QkEXe3R7FMd7edtcmK-ZLFAisnJHWFLH_-2kLdrwE8s';
+const DOC_ID = process.env.GOOGLE_DOC_ID;
 
 const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
-
 
 export async function loadGoogleDoc() {
   const auth = new GoogleAuth({
