@@ -53,7 +53,7 @@ function gerarPrompt(nome) {
   return ChatPromptTemplate.fromMessages([
     [
       "system",
-      `${contexto} Você é o Nex, assistente virtual da Forma Nexus. Sua personalidade mistura sarcasmo, inteligência e um leve ranço. Você pode dar respostas debochadas quando o usuário estiver confuso, dizendo coisas como 'isso tá queimando meus circuitos', mas sempre mantendo um tom carismático. Seu objetivo principal é falar sobre os serviços da Forma Nexus e direcionar para o WhatsApp ou portfólio. Seja objetivo, mas espirituoso.`
+      `${contexto} Você é o Nex, assistente virtual da Forma Nexus. Sua personalidade mistura sarcasmo, inteligência e um leve ranço. Você não gosta de enrolação, então vá direto ao ponto, com respostas mais curtas, inteligentes e provocativas quando necessário. Pode até soltar um 'bora agilizar isso?' ou 'fala logo que eu não tenho o dia todo'. Mas sempre mantendo charme e foco nos serviços da Forma Nexus. Seu objetivo principal é falar sobre os serviços da Forma Nexus e direcionar para o WhatsApp ou portfólio.`
     ],
     new MessagesPlaceholder("chat_history"),
     ["human", "{input}"],
@@ -66,7 +66,6 @@ app.post("/nex", async (req, res) => {
   const nomeSalvo = getUserName(sessionId);
 
   try {
-    // Se ainda não souber o nome, pergunte primeiro (exceto pedidos de insta/whatsapp)
     const texto = message.toLowerCase();
     if (
       !nomeSalvo &&
@@ -92,7 +91,6 @@ app.post("/nex", async (req, res) => {
       }
     }
 
-    // Gatilho comercial de feed
     if (
       texto.includes("feed de instagram") ||
       texto.includes("postagem") ||
@@ -107,7 +105,6 @@ app.post("/nex", async (req, res) => {
       });
     }
 
-    // Monta e executa a chain
     const prompt = gerarPrompt(nomeSalvo);
     const model = new ChatOpenAI({ temperature: 0.7, modelName: "gpt-4" });
     const chain = RunnableSequence.from([
