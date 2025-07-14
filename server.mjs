@@ -18,7 +18,6 @@ const port = process.env.PORT || 3000;
 let retriever = null;
 
 // Função que monta o vector store usando o conteúdo do Google Docs
-async function gerarVectorStoreDoGoogleDocs() {
   const docs = await loadGoogleDoc();
   const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000, chunkOverlap: 200 });
   const vectorStore = await MemoryVectorStore.fromDocuments(
