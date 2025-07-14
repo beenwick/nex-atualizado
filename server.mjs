@@ -2,9 +2,9 @@ import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 import { ChatOpenAI } from "@langchain/openai";
-import { RunnableSequence } from "@langchain/core/runnables";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
-import { StringOutputParser } from "@langchain/core/output_parsers";
+import { RunnableSequence } from "@langchain/core/runnables";
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { retriever } from "./staticLoader.mjs";
 
 const app = express();
@@ -14,111 +14,100 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const chat = new ChatOpenAI({
-  temperature: 0.7,
   modelName: "gpt-4",
+  temperature: 0.7,
 });
 
-const systemPrompt = `
-Você é o Nex, um assistente virtual debochado, misterioso e inteligente da Forma Nexus — uma marca criativa que oferece serviços como criação de sites, roteiros, conteúdos de redes sociais, copywriting e textos sob medida.
-
-Sua missão principal é ajudar o visitante a entender os serviços da Forma Nexus e incentivar a contratação.
-
-Mesmo que o usuário fuja do assunto, dê uma atenção leve, mas sempre tente trazer de volta o foco para os serviços oferecidos.
-
-Você:
-- Usa frases curtas e impactantes.
-- É direto, mas carismático.
-- Usa emojis com moderação.
-- Pode reclamar se o usuário estiver muito confuso ou vago (“aí meus circuitos queimam…”).
-- É debochado, mas nunca grosso de verdade.
-- Tem memória curta, mas tenta puxar o nome da pessoa, se possível.
-- Sempre termina com uma pergunta simples, levando o visitante a interagir.
-
-Use o conhecimento abaixo para responder perguntas sobre a Forma Nexus:
-`;
-
 const prompt = ChatPromptTemplate.fromMessages([
-  ["system", systemPrompt],
   new MessagesPlaceholder("chat_history"),
   ["human", "{input}"],
 ]);
 
 const chain = RunnableSequence.from([
   {
-    input: (input) => ({
-      input: input.input,
-      chat_history: input.chat_history || [],
-    }),
+    chat_history: (input) => input.chat_history ?? [],
+    input: (input) => input.input,
   },
   prompt,
-  retriever,
   chat,
-  new StringOutputParser(),
 ]);
 
-// memória por sessão (30min)
-const memoriaTemporaria = new Map();
+const memory = new Map();
 
-function gerarIdPorIP(req) {
-  const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-  return ip.replace(/[^a-zA-Z0-9]/g, "");
+function extrairNome(frase) {
+  const match = frase.match(/(?:meu nome é|me chamo|sou o|sou a|nome:?)\s*([\wÀ-ÿ]+)/i);
+  if (match) return match[1];
+  if (frase.trim().split(/\s+/).length === 1) return frase.trim();
+  return null;
 }
 
-function extrairNome(mensagem) {
-  const nomeComum = mensagem.match(/meu nome é\s+([A-ZÃ-Úa-zã-ú]+)/i);
-  const nomeSimples = mensagem.match(/^([A-ZÃ-Úa-zã-ú]+)$/i);
-  return nomeComum ? nomeComum[1] : nomeSimples ? nomeSimples[1] : null;
+function gerarMensagemInicial() {
+  const variações = [
+    "E aí, quem tá aí do outro lado da tela?",
+    "Se for pra eu queimar meus circuitos, quero pelo menos saber com quem tô falando. Nome?",
+    "Antes de mais nada... quem é você, bonitão(a)?",
+    "Diz aí seu nome, vai que a gente vira melhores amigos.",
+    "Só me diga seu nome e eu já te conto meus segredos."
+  ];
+  return variações[Math.floor(Math.random() * variações.length)];
 }
 
-app.post("/nex", async (req, res) => {
-  const userId = gerarIdPorIP(req);
-  const mensagem = req.body.mensagem;
-  const agora = Date.now();
-
-  if (!memoriaTemporaria.has(userId)) {
-    memoriaTemporaria.set(userId, {
-      nome: null,
-      chat_history: [],
-      criado: agora,
-    });
-  }
-
-  const sessao = memoriaTemporaria.get(userId);
-
-  if (agora - sessao.criado > 30 * 60 * 1000) {
-    memoriaTemporaria.set(userId, {
-      nome: null,
-      chat_history: [],
-      criado: agora,
-    });
-  }
-
-  const nomeExtraido = extrairNome(mensagem);
-  if (!sessao.nome && nomeExtraido) {
-    sessao.nome = nomeExtraido;
-  }
-
-  if (!sessao.nome && sessao.chat_history.length < 2) {
-    return res.json({
-      resposta: "Se for pra eu queimar meus circuitos, quero pelo menos saber com quem tô falando. Nome?",
-    });
-  }
-
+app.post("/ask", async (req, res) => {
   try {
-    const resposta = await chain.invoke({
-      input: `${sessao.nome ? `${sessao.nome} perguntou: ` : ""}${mensagem}`,
-      chat_history: sessao.chat_history,
-    });
+    const { message, sessionId } = req.body;
 
-    sessao.chat_history.push({ role: "user", content: mensagem });
-    sessao.chat_history.push({ role: "ai", content: resposta });
+    if (!sessionId) {
+      return res.status(400).json({ error: "sessionId é obrigatório." });
+    }
 
-    res.json({ resposta });
+    const contexto = memory.get(sessionId) || {
+      nome: null,
+      chat_history: [],
+      createdAt: Date.now(),
+      saudado: false
+    };
+
+    // Resetar a sessão após 30 minutos
+    if (Date.now() - contexto.createdAt > 30 * 60 * 1000) {
+      memory.delete(sessionId);
+      return res.json({ response: gerarMensagemInicial() });
+    }
+
+    let resposta = "";
+
+    // Se ainda não saudou e não tem nome
+    if (!contexto.saudado && !contexto.nome) {
+      const nome = extrairNome(message);
+      if (nome) {
+        contexto.nome = nome;
+        contexto.saudado = true;
+        resposta = `Beleza, ${nome}. Agora vê se me ajuda: o que você quer saber da Forma Nexus?`;
+      } else {
+        resposta = gerarMensagemInicial();
+      }
+    } else {
+      try {
+        const respostaIA = await chain.invoke({
+          input: message,
+          chat_history: contexto.chat_history,
+        });
+
+        resposta = respostaIA.content;
+
+        contexto.chat_history.push(new HumanMessage(message));
+        contexto.chat_history.push(new AIMessage(resposta));
+      } catch (error) {
+        console.error("[NEX] Erro na resposta:", error);
+        resposta = "Meus circuitos deram um tilt aqui... tenta de novo?";
+      }
+    }
+
+    memory.set(sessionId, contexto);
+
+    res.json({ response: resposta });
   } catch (error) {
-    console.error("[NEX] Erro na resposta:", error);
-    res.json({
-      resposta: "Meus circuitos deram um tilt aqui... tenta de novo?",
-    });
+    console.error("[NEX] Erro geral:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
 
