@@ -8,7 +8,7 @@ import { google } from 'googleapis';
 
 async function loadGoogleDoc() {
   const auth = new google.auth.GoogleAuth({
-    credentials: JSON.parse(fs.readFileSync('./nex-docs-reader.json', 'utf8')),
+    credentials: JSON.parse(fs.readFileSync('./keys/nex-docs-reader.json', 'utf8')),
     scopes: ['https://www.googleapis.com/auth/documents.readonly'],
   });
 
