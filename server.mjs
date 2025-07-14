@@ -1,105 +1,111 @@
-// 1. Imports externos 
+// server.mjs
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { carregarRetriever } from "./staticLoader.mjs";
 import { ChatOpenAI } from "@langchain/openai";
 import { RunnableSequence } from "@langchain/core/runnables";
+import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
+import { formatMessagesForLLM } from "@langchain/core/utils";
+import { BufferMemory } from "langchain/memory";
+import { retriever } from "./staticLoader.mjs";
 
 dotenv.config();
+
 const app = express();
+const port = process.env.PORT || 3000;
+
 app.use(cors());
 app.use(express.json());
 
-const port = process.env.PORT || 3000;
-let retriever = null;
+const memories = new Map();
+const names = new Map();
 
-const memoriaTemporaria = new Map(); // { sessionId: { nome, historico: [], timestamp } }
-
-function atualizarMemoria(sessionId, role, content) {
-  const agora = Date.now();
-  let sessao = memoriaTemporaria.get(sessionId);
-  if (!sessao || agora - sessao.timestamp > 30 * 60 * 1000) {
-    sessao = { nome: null, historico: [], timestamp: agora };
+function getMemory(sessionId) {
+  if (!memories.has(sessionId)) {
+    const memory = new BufferMemory({
+      returnMessages: true,
+      memoryKey: "chat_history",
+    });
+    memories.set(sessionId, memory);
   }
-  sessao.historico.push({ role, content });
-  if (sessao.historico.length > 6) sessao.historico.shift();
-  sessao.timestamp = agora;
-
-  // Detecta nome do usuário
-  if (!sessao.nome) {
-    const nomeMatch = content.match(/(?:me chamo|sou o|sou a|meu nome é)\s+([A-Za-zÀ-ú]+)/i);
-    if (nomeMatch) {
-      sessao.nome = nomeMatch[1];
-    }
-  }
-
-  memoriaTemporaria.set(sessionId, sessao);
-  return sessao;
+  return memories.get(sessionId);
 }
 
-// Inicializa antes de aceitar requisições
-(async () => {
-  try {
-    retriever = await carregarRetriever();
-    console.log("[NEX] Retriever local carregado com sucesso.");
+function getUserName(sessionId) {
+  return names.get(sessionId);
+}
 
-    const llm = new ChatOpenAI({ modelName: "gpt-4", temperature: 0.7 });
+function setUserName(sessionId, nome) {
+  names.set(sessionId, nome);
+  setTimeout(() => names.delete(sessionId), 30 * 60 * 1000);
+}
+
+function extrairNome(mensagem) {
+  const nomeMatch = mensagem.match(/meu nome (é|eh) ([A-ZÃ-Úa-zã-ú]+)/i) || mensagem.match(/me chamo ([A-ZÃ-Úa-zã-ú]+)/i);
+  return nomeMatch ? nomeMatch[nomeMatch.length - 1] : null;
+}
+
+function gerarPrompt(nome) {
+  const contexto = nome ? `O nome do usuário é ${nome}.` : "Você ainda não sabe o nome do usuário.";
+  return ChatPromptTemplate.fromMessages([
+    ["system", `${contexto} Você é o Nex, assistente virtual da Forma Nexus. Sua personalidade mistura sarcasmo, inteligência e um leve ranço. Você pode dar respostas debochadas quando o usuário estiver confuso, dizendo coisas como 'isso tá queimando meus circuitos', mas sempre mantendo um tom carismático. Seu objetivo principal é falar sobre os serviços da Forma Nexus e direcionar para o WhatsApp ou portfólio. Seja objetivo, mas espirituoso.`],
+    new MessagesPlaceholder("chat_history"),
+    ["human", "{input}"],
+  ]);
+}
+
+app.post("/nex", async (req, res) => {
+  const { message, sessionId } = req.body;
+  const memory = getMemory(sessionId);
+  const nomeSalvo = getUserName(sessionId);
+
+  try {
+    if (!nomeSalvo && !message.toLowerCase().includes("instagram") && !message.toLowerCase().includes("whatsapp")) {
+      const nomeExtraido = extrairNome(message);
+      if (nomeExtraido) {
+        setUserName(sessionId, nomeExtraido);
+        return res.json({ reply: `Beleza, ${nomeExtraido}. Agora vê se me ajuda: o que você quer saber da Forma Nexus?` });
+      } else {
+        const perguntas = [
+          "Antes de tudo... como cê se chama?",
+          "E aí, qual é teu nome, criatura?",
+          "Me diz teu nome rapidinho (sem CPF, por enquanto)",
+          "Se for pra eu queimar meus circuitos, quero pelo menos saber com quem tô falando. Nome?"
+        ];
+        const aleatoria = perguntas[Math.floor(Math.random() * perguntas.length)];
+        return res.json({ reply: aleatoria });
+      }
+    }
+
+    const prompt = gerarPrompt(nomeSalvo);
+    const model = new ChatOpenAI({
+      temperature: 0.7,
+      modelName: "gpt-4"
+    });
 
     const chain = RunnableSequence.from([
-      async ({ input, historico, nome }) => {
-        if (!retriever) throw new Error("Retriever não inicializado.");
-        const relevantDocs = await retriever.getRelevantDocuments(input);
-
-        const systemMessage = {
-          role: "system",
-          content: `Você é o Nex, assistente virtual da Forma Nexus.
-Sua personalidade é debochada, espirituosa e carismática, mas seu objetivo principal é ajudar o visitante a entender e contratar os serviços oferecidos no site.
-
-Você pode conversar sobre outros assuntos brevemente, mas deve sempre puxar a conversa de volta para:
-- os serviços da Forma Nexus (sites, textos, feeds, identidade visual etc.)
-- o conteúdo do site
-- o que o visitante está buscando para o próprio projeto
-
-Se a conversa sair do foco, use seu carisma para redirecionar naturalmente. Seja útil, engraçado e comercial ao mesmo tempo.`
-        };
-
-        const userPrompt = `Base de conhecimento:\n${relevantDocs.map(d => d.pageContent).join("\n---\n")}\n\n` +
-          (nome ? `O nome do usuário é ${nome}.\n\n` : "") +
-          `Histórico da conversa:\n${historico.map(h => `[${h.role}]: ${h.content}`).join("\n")}\n\nPergunta atual:\n${input}`;
-
-        return [systemMessage, { role: "user", content: userPrompt }];
+      {
+        input: (initialInput) => ({
+          input: initialInput.input,
+          chat_history: initialInput.chat_history || [],
+        })
       },
-      llm,
+      formatMessagesForLLM,
+      prompt,
+      model
     ]);
 
-    app.post("/nex", async (req, res) => {
-      const { message, sessionId } = req.body;
-      if (!message || !sessionId) {
-        return res.status(400).json({ reply: "Mensagem ou sessão inválidos." });
-      }
-      try {
-        const sessao = atualizarMemoria(sessionId, "user", message);
-        const resposta = await chain.invoke({
-          input: message,
-          historico: sessao.historico,
-          nome: sessao.nome
-        });
-        let reply = resposta.content?.trim() || "";
-        reply = reply.replace(/^resposta:\\s*/i, "");
-        atualizarMemoria(sessionId, "ai", reply);
-        return res.json({ reply });
-      } catch (err) {
-        console.error("[NEX] Erro na resposta:", err);
-        return res.status(500).json({ reply: "Erro interno ao responder." });
-      }
-    });
+    const resposta = await chain.invoke({ input: message, chat_history: await memory.loadMemoryVariables({}) });
+    await memory.saveContext({ input: message }, { output: resposta.content });
 
-    app.listen(port, () => {
-      console.log(`[NEX] Rodando na porta ${port}`);
-    });
-
+    const textoFinal = resposta.content.replace(/^Resposta:\s*/i, "");
+    res.json({ reply: textoFinal });
   } catch (err) {
-    console.error("[NEX] Erro ao iniciar servidor:", err);
+    console.error("[NEX] Erro na resposta:", err);
+    res.status(500).json({ reply: "Meus circuitos deram um tilt aqui... tenta de novo?" });
   }
-})();
+});
+
+app.listen(port, () => {
+  console.log(`[🔥 NEX ONLINE] Porta ${port}`);
+});
