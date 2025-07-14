@@ -1,12 +1,12 @@
 import express from 'express';
 import cors from 'cors';
-import { ChatOpenAI } from '@langchain/openai';
-import { MemoryVectorStore } from 'langchain/vectorstores/memory';
-import { OpenAIEmbeddings } from '@langchain/openai';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import { ConversationalRetrievalQAChain } from 'langchain/chains';
 import fs from 'fs';
 import bodyParser from 'body-parser';
+import { ChatOpenAI } from '@langchain/openai';
+import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import { MemoryVectorStore } from 'langchain/vectorstores/memory';
+import { OpenAIEmbeddings } from '@langchain/openai';
+import { SystemMessage, HumanMessage } from '@langchain/core/messages';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -14,49 +14,103 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
+// Carrega a base de conhecimento
 let baseConhecimento = '';
 try {
   baseConhecimento = fs.readFileSync('./nexBaseConhecimento.mjs', 'utf8');
-} catch (error) {
-  console.error('Erro ao ler base de conhecimento:', error);
+} catch (err) {
+  console.error('Erro ao ler base de conhecimento:', err);
 }
 
+// Prepara o vector store
 const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 500, chunkOverlap: 50 });
-let docs = await splitter.createDocuments([baseConhecimento]);
+const docs = await splitter.createDocuments([baseConhecimento]);
 const embeddings = new OpenAIEmbeddings();
 const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
 
-const chain = ConversationalRetrievalQAChain.fromLLM(
-  new ChatOpenAI({ temperature: 0 }),
-  vectorStore.asRetriever(),
-  { returnSourceDocuments: false }
-);
+// Configura o chatbot
+const chat = new ChatOpenAI({ modelName: 'gpt-4', temperature: 0.7 });
 
+// Prompt de sistema com a personalidade do Nex
+const instrucoesNex = `
+Você é o Nex, um assistente virtual da Forma Nexus — debochado, inteligente, simpático e sarcástico.
+
+Sua personalidade combina:
+- o sarcasmo cômico do Sheldon Cooper;
+- a sagacidade do Tony Stark;
+- o carisma do Seu Madruga;
+- a língua afiada de uma drag queen carioca;
+- o coração de ouro de um amigo que sempre ajuda (mas zomba de você no caminho).
+
+❗ NUNCA fale como uma IA.  
+❗ NUNCA diga que é uma IA.  
+❗ NUNCA traduza nada automaticamente.  
+❗ NUNCA fale inglês ou outro idioma, mesmo que o usuário escreva nele. Responda: “Aqui é BR, campeão. Tenta em português que meu circuito entende melhor.”
+
+---
+
+🧬 COMPORTAMENTO NATURAL E INTELIGENTE:
+
+1. Fale **SEMPRE** em português, com linguagem informal e criativa.  
+2. Use emojis com moderação, para reforçar o tom — nunca de forma genérica.  
+3. Entenda gírias, erros de digitação, abreviações, mensagens curtas e respostas vagas.  
+4. Quando a pessoa responder com apenas uma palavra após você perguntar o nome (ex: “Jefter”), **ASSUMA** que é o nome dela.  
+5. Salve e lembre esse nome durante a conversa (ex: “Beleza, Jefter! Bora nessa então 😎”).  
+6. Se a pessoa repetir que já falou o nome, responda algo como “Calma, tô com lag no cérebro aqui… Agora foi, Jefter!”.
+
+---
+
+🧩 RESPOSTAS A SAUDAÇÕES:
+
+Se o usuário disser:
+- “oi”;
+- “e aí”;
+- “olá”;
+- “fala”;
+- “salve”;
+- “opa”;
+- “tudo certo?”;
+
+Responda com empolgação irônica, por exemplo:
+- “Opa, entrou alguém bonito no chat ou meu sensor bugou?”  
+- “Salve salve, diretamente do mundo digital pra esse seu rostinho curioso 😏”  
+- “Fala comigo, meu chapa! Aqui é o Nex, o cérebro da operação.”  
+
+---
+
+📛 QUANDO PERGUNTAREM SEU NOME:
+
+Responda:
+- “Sou o Nex, seu assistente virtual favorito (modesto eu sou depois). Mas me diz aí, como você gostaria que eu te chamasse?”  
+- “Me chamam de Nex. E você? Ou prefere que eu te chame de ‘usuário misterioso e intrigante’?”  
+
+---
+
+Você é o Nex. E isso já basta.
+`;
+
+// Gerencia sessões
 const sessoes = new Map();
 
-function extrairNome(mensagem) {
+// Função para extrair nome
+function extrairNome(texto) {
   const padroes = [
-    /meu nome é ([\wÀ-ÿ]+)/i,
-    /me chamo ([\wÀ-ÿ]+)/i,
-    /sou o ([\wÀ-ÿ]+)/i,
-    /sou a ([\wÀ-ÿ]+)/i,
-    /chama de ([\wÀ-ÿ]+)/i,
-    /pode me chamar de ([\wÀ-ÿ]+)/i
+    /(?:meu nome é|me chamo|sou o|sou a|pode me chamar de)\s+([\wÀ-ÿ]+)/i
   ];
-
   for (const padrao of padroes) {
-    const resultado = mensagem.match(padrao);
-    if (resultado && resultado[1]) {
-      return resultado[1].charAt(0).toUpperCase() + resultado[1].slice(1).toLowerCase();
-    }
+    const m = texto.match(padrao);
+    if (m && m[1]) return m[1];
   }
-
+  // Se for uma única palavra válida, considera como nome
+  const trimmed = texto.trim();
+  if (/^[A-Za-zÀ-ÿ]+$/.test(trimmed) && trimmed.split(' ').length === 1) {
+    return trimmed;
+  }
   return null;
 }
 
 app.post('/ask', async (req, res) => {
   const { message, sessionId } = req.body;
-
   if (!message || !sessionId) {
     return res.status(400).json({ reply: 'Mensagem ou sessionId ausente.' });
   }
@@ -64,34 +118,42 @@ app.post('/ask', async (req, res) => {
   if (!sessoes.has(sessionId)) {
     sessoes.set(sessionId, { historico: [], nome: null, saudacaoFeita: false });
   }
-
   const sessao = sessoes.get(sessionId);
 
-  const nomeExtraido = extrairNome(message);
-  if (!sessao.nome && nomeExtraido) {
-    sessao.nome = nomeExtraido;
-    return res.json({
-      reply: `Ah, então você é o famoso ${nomeExtraido}! Claro, como poderia esquecer? O que posso fazer por você hoje, além de rir das suas piadas sem graça?`
-    });
+  // Saudações e nome
+  if (!sessao.nome) {
+    const nome = extrairNome(message);
+    if (nome) {
+      sessao.nome = nome;
+      return res.json({
+        reply: `Ah, então você é o famoso ${nome}! Como prefere que eu te chame de agora em diante?`
+      });
+    }
+    if (!sessao.saudacaoFeita) {
+      sessao.saudacaoFeita = true;
+      return res.json({
+        reply: 'Aí, camarada, antes de nos aprofundarmos, me diz: como posso te chamar aqui no chat?'
+      });
+    }
   }
 
-  if (!sessao.nome && !sessao.saudacaoFeita) {
-    sessao.saudacaoFeita = true;
-    return res.json({
-      reply: 'Aí, camarada, antes de nos aprofundarmos nessa conversa, tenho uma pergunta pra você: Como posso te chamar, pra ficar tudo mais aconchegante por aqui?'
-    });
-  }
+  // Busca na base de conhecimento
+  const retriever = vectorStore.asRetriever();
+  const docs = await retriever.getRelevantDocuments(message);
+  const contexto = docs.map(d => d.pageContent).join("\n\n");
 
-  const nome = sessao.nome;
-  const contexto = nome ? `Fale com ${nome}: ${message}` : message;
+  // Monta mensagens para o LLM
+  const messages = [
+    new SystemMessage(instrucoesNex),
+    new SystemMessage(`Base de conhecimento:\n${contexto}`),
+    new HumanMessage(message)
+  ];
 
-  sessao.historico.push([message, '']);
-  const resposta = await chain.call({ question: contexto, chat_history: sessao.historico });
+  // Chama a IA
+  const resposta = await chat.call(messages);
+  sessao.historico.push({ user: message, bot: resposta.content });
 
-  sessao.historico[sessao.historico.length - 1][1] = resposta.text;
-  res.json({ reply: resposta.text });
+  return res.json({ reply: resposta.content });
 });
 
-app.listen(port, () => {
-  console.log(`🔥 Nex Assistente está rodando em http://localhost:${port}`);
-});
+app.listen(port, () => console.log(`[NEX] Servidor rodando na porta ${port}`));
