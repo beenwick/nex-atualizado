@@ -5,7 +5,6 @@ import dotenv from "dotenv";
 import { ChatOpenAI } from "@langchain/openai";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
-import { formatMessagesForLLM } from "@langchain/core/utils";
 import { BufferMemory } from "langchain/memory";
 import { retriever } from "./staticLoader.mjs";
 
@@ -41,14 +40,21 @@ function setUserName(sessionId, nome) {
 }
 
 function extrairNome(mensagem) {
-  const nomeMatch = mensagem.match(/meu nome (é|eh) ([A-ZÃ-Úa-zã-ú]+)/i) || mensagem.match(/me chamo ([A-ZÃ-Úa-zã-ú]+)/i);
+  const nomeMatch =
+    mensagem.match(/meu nome (é|eh) ([A-ZÃ-Úa-zã-ú]+)/i) ||
+    mensagem.match(/me chamo ([A-ZÃ-Úa-zã-ú]+)/i);
   return nomeMatch ? nomeMatch[nomeMatch.length - 1] : null;
 }
 
 function gerarPrompt(nome) {
-  const contexto = nome ? `O nome do usuário é ${nome}.` : "Você ainda não sabe o nome do usuário.";
+  const contexto = nome
+    ? `O nome do usuário é ${nome}.`
+    : "Você ainda não sabe o nome do usuário.";
   return ChatPromptTemplate.fromMessages([
-    ["system", `${contexto} Você é o Nex, assistente virtual da Forma Nexus. Sua personalidade mistura sarcasmo, inteligência e um leve ranço. Você pode dar respostas debochadas quando o usuário estiver confuso, dizendo coisas como 'isso tá queimando meus circuitos', mas sempre mantendo um tom carismático. Seu objetivo principal é falar sobre os serviços da Forma Nexus e direcionar para o WhatsApp ou portfólio. Seja objetivo, mas espirituoso.`],
+    [
+      "system",
+      `${contexto} Você é o Nex, assistente virtual da Forma Nexus. Sua personalidade mistura sarcasmo, inteligência e um leve ranço. Você pode dar respostas debochadas quando o usuário estiver confuso, dizendo coisas como 'isso tá queimando meus circuitos', mas sempre mantendo um tom carismático. Seu objetivo principal é falar sobre os serviços da Forma Nexus e direcionar para o WhatsApp ou portfólio. Seja objetivo, mas espirituoso.`
+    ],
     new MessagesPlaceholder("chat_history"),
     ["human", "{input}"],
   ]);
@@ -60,11 +66,19 @@ app.post("/nex", async (req, res) => {
   const nomeSalvo = getUserName(sessionId);
 
   try {
-    if (!nomeSalvo && !message.toLowerCase().includes("instagram") && !message.toLowerCase().includes("whatsapp")) {
+    // Se ainda não souber o nome, pergunte primeiro (exceto pedidos de insta/whatsapp)
+    const texto = message.toLowerCase();
+    if (
+      !nomeSalvo &&
+      !texto.includes("instagram") &&
+      !texto.includes("whatsapp")
+    ) {
       const nomeExtraido = extrairNome(message);
       if (nomeExtraido) {
         setUserName(sessionId, nomeExtraido);
-        return res.json({ reply: `Beleza, ${nomeExtraido}. Agora vê se me ajuda: o que você quer saber da Forma Nexus?` });
+        return res.json({
+          reply: `Beleza, ${nomeExtraido}. Agora vê se me ajuda: o que você quer saber da Forma Nexus?`
+        });
       } else {
         const perguntas = [
           "Antes de tudo... como cê se chama?",
@@ -72,30 +86,46 @@ app.post("/nex", async (req, res) => {
           "Me diz teu nome rapidinho (sem CPF, por enquanto)",
           "Se for pra eu queimar meus circuitos, quero pelo menos saber com quem tô falando. Nome?"
         ];
-        const aleatoria = perguntas[Math.floor(Math.random() * perguntas.length)];
+        const aleatoria =
+          perguntas[Math.floor(Math.random() * perguntas.length)];
         return res.json({ reply: aleatoria });
       }
     }
 
-    const prompt = gerarPrompt(nomeSalvo);
-    const model = new ChatOpenAI({
-      temperature: 0.7,
-      modelName: "gpt-4"
-    });
+    // Gatilho comercial de feed
+    if (
+      texto.includes("feed de instagram") ||
+      texto.includes("postagem") ||
+      texto.includes("cuida do insta")
+    ) {
+      return res.json({
+        reply: `A gente arrasa nos feeds! ✨ Criamos postagens com estética, estratégia e frequência certinha pra tua marca brilhar.\n\nQuer que eu te mostre exemplos ou prefere já bater um papo direto no WhatsApp?`,
+        buttons: [
+          { label: "Ver exemplos", link: "https://formanexus.com.br/#portfolios" },
+          { label: "Falar no WhatsApp", link: "https://wa.me/5511939014504" }
+        ]
+      });
+    }
 
+    // Monta e executa a chain
+    const prompt = gerarPrompt(nomeSalvo);
+    const model = new ChatOpenAI({ temperature: 0.7, modelName: "gpt-4" });
     const chain = RunnableSequence.from([
       {
-        input: (initialInput) => ({
-          input: initialInput.input,
-          chat_history: initialInput.chat_history || [],
+        input: (initial) => ({
+          input: initial.input,
+          chat_history: initial.chat_history || []
         })
       },
-      formatMessagesForLLM,
       prompt,
       model
     ]);
 
-    const resposta = await chain.invoke({ input: message, chat_history: await memory.loadMemoryVariables({}) });
+    const chatHistory = await memory.loadMemoryVariables({});
+    const resposta = await chain.invoke({
+      input: message,
+      chat_history: chatHistory
+    });
     await memory.saveContext({ input: message }, { output: resposta.content });
 
     const textoFinal = resposta.content.replace(/^Resposta:\s*/i, "");
