@@ -29,7 +29,7 @@ const embeddings = new OpenAIEmbeddings();
 const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
 
 // Configura o chatbot
-const chat = new ChatOpenAI({ modelName: 'gpt-4', temperature: 0.7 });
+const chat = new ChatOpenAI({ modelName: 'gpt-3.5-turbo', temperature: 0.7 });
 
 // Prompt de sistema com a personalidade do Nex
 const instrucoesNex = `
