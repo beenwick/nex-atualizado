@@ -26,10 +26,17 @@ let retriever = null;
       async (input) => {
         if (!retriever) throw new Error("Retriever não inicializado.");
         const relevantDocs = await retriever.getRelevantDocuments(input);
-        return {
-          input,
-          context: relevantDocs.map((d) => d.pageContent).join("\n---\n"),
-        };
+
+        return [
+          {
+            role: "system",
+            content: "Você é o Nex, um assistente debochado, espirituoso e carismático que ajuda visitantes do site Forma Nexus.",
+          },
+          {
+            role: "user",
+            content: `Base de conhecimento:\n${relevantDocs.map(d => d.pageContent).join("\n---\n")}\n\nPergunta:\n${input}`
+          }
+        ];
       },
       llm,
     ]);
