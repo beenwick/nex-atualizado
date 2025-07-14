@@ -7,7 +7,8 @@ import { TextLoader } from 'langchain/document_loaders/fs/text';
 const SCOPES = ['https://www.googleapis.com/auth/documents.readonly'];
 const DOC_ID = '1QkEXe3R7FMd7edtcmK-ZLFAisnJHWFLH_-2kLdrwE8s';
 
-const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+
 
 export async function loadGoogleDoc() {
   const auth = new GoogleAuth({
