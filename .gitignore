@@ -1,3 +1,6 @@
 node_modules/
 .env
 nex-docs-reader.json
+keys/nex-docs-reader.json
+keys/original_key.pem
+keys/nex-embeddings.json

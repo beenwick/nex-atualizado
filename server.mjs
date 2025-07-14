@@ -2,7 +2,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { loadGoogleDoc } from "./googleDocsLoader.mjs";
+import { gerarVectorStoreDoGoogleDocs } from "./googleDocsLoader.mjs";
 import { ChatOpenAI } from "@langchain/openai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { OpenAIEmbeddings } from "@langchain/openai";
