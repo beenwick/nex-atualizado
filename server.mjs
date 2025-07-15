@@ -1,3 +1,12 @@
+import {
+  limparMensagem,
+  detectarNome,
+  detectarIntencao,
+  temMultiplasPerguntas,
+  personalizarResposta,
+  respostaEhRuim
+} from './utils.mjs';
+import { instrucoesNex } from './instrucoesNex.mjs';
 import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
@@ -7,14 +16,6 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { SystemMessage, HumanMessage } from '@langchain/core/messages';
-import {
-  limparMensagem,
-  detectarNome,
-  detectarIntencao,
-  temMultiplasPerguntas,
-  personalizarResposta
-} from './utils.mjs';
-import { instrucoesNex } from './instrucoesNex.mjs';
 import { baseConhecimento } from './nexBaseConhecimento.mjs';
 
 const app = express();
@@ -23,37 +24,19 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Carrega a base de conhecimento
 let baseConhecimentoTexto = '';
 try {
   baseConhecimentoTexto = fs.readFileSync('./nexBaseConhecimento.mjs', 'utf8');
-  console.log('📄 Base de conhecimento carregada com sucesso.');
 } catch (err) {
-  console.error('❌ Erro ao ler base de conhecimento:', err);
-  process.exit(1);
+  console.error('Erro ao ler base de conhecimento:', err);
 }
 
-// Prepara o vector store
-let vectorStore;
-try {
-  console.log('📚 Dividindo base em documentos...');
-  const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 500, chunkOverlap: 50 });
-  const docs = await splitter.createDocuments([baseConhecimentoTexto]);
+const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 500, chunkOverlap: 50 });
+const docs = await splitter.createDocuments([baseConhecimentoTexto]);
+const embeddings = new OpenAIEmbeddings();
+const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
 
-  console.log('🧠 Gerando embeddings...');
-  const embeddings = new OpenAIEmbeddings();
-  vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
-
-  console.log('✅ Vector store pronto!');
-} catch (err) {
-  console.error('❌ Erro ao preparar Vector Store:', err);
-  process.exit(1);
-}
-
-// Configura o chatbot
 const chat = new ChatOpenAI({ modelName: 'gpt-3.5-turbo', temperature: 0.7 });
-
-// Gerencia sessões
 const sessoes = new Map();
 
 function mensagemEhVaga(msg) {
@@ -98,7 +81,6 @@ app.post('/ask', async (req, res) => {
     if (nomeRepetido && nomeRepetido.toLowerCase() === sessao.nome.toLowerCase()) {
       return res.json({ reply: `Tamo junto, ${sessao.nome}. Pode mandar ver, tô aqui!` });
     }
-
     if (
       mensagemLimpa === sessao.nome.toLowerCase() ||
       mensagemOriginal.trim().toLowerCase() === sessao.nome.toLowerCase()
@@ -126,9 +108,11 @@ app.post('/ask', async (req, res) => {
 
   if (respostaComposta.length) {
     sessao.ultimaIntencao = intencoes[intencoes.length - 1] || null;
-    const textoFinal = personalizarResposta(respostaComposta.join('\n\n'), sessao.nome);
-    sessao.historico.push({ user: mensagemOriginal, bot: textoFinal });
-    return res.json({ reply: textoFinal });
+    const texto = respostaComposta.join('\n\n');
+    const encerrar = intencoes.includes('agradecimento') || intencoes.includes('despedida');
+    const respostaFinal = personalizarResposta(texto, sessao.nome, encerrar);
+    sessao.historico.push({ user: mensagemOriginal, bot: respostaFinal });
+    return res.json({ reply: respostaFinal });
   }
 
   const retriever = vectorStore.asRetriever();
@@ -151,24 +135,33 @@ app.post('/ask', async (req, res) => {
   try {
     resposta = await chat.call(messages);
   } catch (err) {
-    console.error('Erro ao chamar IA:', err);
+    console.error('Erro ao chamar IA contextual:', err);
     return res.status(500).json({
       reply: 'Tô meio bugado agora... tenta de novo mais tarde 😵‍💫'
     });
   }
 
   let texto = resposta.content.trim();
-  const respostasGenéricas = ['não entendi', 'pode repetir', 'tenta em português'];
-  const isRespostaGenerica = respostasGenéricas.some(r => texto.toLowerCase().includes(r));
-  if (isRespostaGenerica && /\bia\b/i.test(mensagemLimpa) && /chatbot/i.test(mensagemLimpa)) {
-    texto =
-      'Boa pergunta! IA é a tecnologia por trás da inteligência — tipo eu. Chatbot é a interface que conversa com você. Com IA, ele fica menos burro. 😉';
+
+  // ⚠️ Se for ruim, vazia ou genérica — usar fallback com IA geral
+  if (respostaEhRuim(texto)) {
+    try {
+      const fallback = await chat.call([
+        new SystemMessage('Responda de forma direta, carismática e eficiente. Seja objetivo, natural e confiante.'),
+        new HumanMessage(mensagemLimpa)
+      ]);
+      texto = fallback.content.trim();
+    } catch (e) {
+      console.error('Erro na IA fallback:', e);
+      texto = 'Não consegui bolar uma boa resposta agora. Bora tentar de outro jeito? 🤔';
+    }
   }
 
-  texto = personalizarResposta(texto, sessao.nome);
+  const encerrar = intencoes.includes('agradecimento') || intencoes.includes('despedida');
+  const respostaFinal = personalizarResposta(texto, sessao.nome, encerrar);
   sessao.ultimaIntencao = intencoes[0] || null;
-  sessao.historico.push({ user: mensagemOriginal, bot: texto });
-  return res.json({ reply: texto });
+  sessao.historico.push({ user: mensagemOriginal, bot: respostaFinal });
+  return res.json({ reply: respostaFinal });
 });
 
 app.listen(port, () => console.log(`[NEX] Servidor rodando na porta ${port}`));

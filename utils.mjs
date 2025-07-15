@@ -60,6 +60,7 @@ export function detectarIntencao(mensagem, intencoes) {
 
   return intencoesDetectadas;
 }
+
 /**
  * Detecta se a mensagem contém múltiplas perguntas.
  * @param {string} texto
@@ -69,13 +70,15 @@ export function temMultiplasPerguntas(texto) {
   const perguntas = texto.split(/[?.!]/).filter(p => p.trim().length > 5);
   return perguntas.length >= 2;
 }
+
 /**
  * Aplica estilo debochado e personalizado às respostas.
  * @param {string} texto - Texto da resposta original.
  * @param {string|null} nome - Nome do usuário, se houver.
+ * @param {boolean} encerrar - Se é uma resposta de encerramento (aplica frase de efeito).
  * @returns {string} - Texto adaptado.
  */
-export function personalizarResposta(texto, nome = null) {
+export function personalizarResposta(texto, nome = null, encerrar = false) {
   const frasesExtras = [
     'Fácil demais pra mim.',
     'Essa foi tranquila, vai dificultar não?',
@@ -86,9 +89,26 @@ export function personalizarResposta(texto, nome = null) {
     'Vou deixar essa de presente porque gosto de você.'
   ];
 
-  const saudacao = nome ? `Olha só, ${nome},` : 'Seguinte,';
+  // Só adiciona frase de efeito se for encerramento
+  if (!encerrar) return texto;
 
-  const tempero = frasesExtras[Math.floor(Math.random() * frasesExtras.length)];
+  const extra = frasesExtras[Math.floor(Math.random() * frasesExtras.length)];
+  return `${texto}\n\n${extra}`;
+}
 
-  return `${saudacao} ${texto}\n\n${tempero}`;
+/**
+ * Detecta se a resposta gerada é genérica ou ruim.
+ * @param {string} texto
+ * @returns {boolean}
+ */
+export function respostaEhRuim(texto) {
+  const ruim = [
+    'não entendi',
+    'não sei',
+    'não tenho certeza',
+    'não posso responder isso',
+    'desculpe',
+    'sou só um chatbot'
+  ];
+  return ruim.some(r => texto.toLowerCase().includes(r)) || texto.length < 15;
 }
