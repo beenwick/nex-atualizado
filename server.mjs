@@ -96,9 +96,9 @@ app.post('/ask', async (req, res) => {
     intencoes.push(sessao.ultimaIntencao);
   }
 
+  // Intenção "orcamento"
   if (intencoes.includes('orcamento')) {
-    const texto = baseConhecimento.intencaoUsuario['orcamento']?.resposta ||
-      'Os valores variam conforme o projeto, mas o melhor jeito de conseguir um orçamento direto, rápido e certeiro é falando com o criador. Clique abaixo para ir ao nosso WhatsApp:';
+    const texto = 'Os valores variam conforme o projeto, mas o melhor jeito de conseguir um orçamento direto, rápido e certeiro é falando com o criador. Clique abaixo para ir ao nosso WhatsApp:';
     const respostaFinal = personalizarResposta(texto, sessao.nome, false);
     sessao.historico.push({ user: mensagemOriginal, bot: respostaFinal });
     sessao.ultimaIntencao = 'orcamento';
@@ -170,6 +170,11 @@ app.post('/ask', async (req, res) => {
       new HumanMessage(mensagemLimpa)
     ]);
     texto = fallback.content.trim();
+  }
+
+  if (sessao.intencaoTemaFora && !texto.includes('Forma Nexus')) {
+    texto += '\n\nAliás, só pra lembrar: meu foco aqui é te ajudar com os serviços da Forma Nexus. Me conta se quiser um site, feed, texto ou algo assim!';
+    sessao.intencaoTemaFora = false;
   }
 
   const encerrar = intencoes.includes('agradecimento') || intencoes.includes('despedida');

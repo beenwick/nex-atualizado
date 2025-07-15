@@ -148,7 +148,9 @@ export const baseConhecimento = {
           "quero tirar uma dúvida com você",
           "tem alguém aí?"
         ],
-        "resposta": "Pode chamar direto no WhatsApp: (11) 94901-4504 📲 Ou manda um e-mail para contato@formanexus.com. Respondemos com carisma e sem enrolar!"
+        "resposta": "Pode deixar! Você pode falar com a gente no WhatsApp abaixo:",
+        "showButton": true,
+        "link": "https://wa.me/5511939014504"
       },
       "orcamento": {
         "sinonimos": [
@@ -156,7 +158,7 @@ export const baseConhecimento = {
           "valor do serviço", "qual o preço?", "me passa o orçamento", "preço de um site",
           "quanto fica?", "quero saber o preço"
         ],
-        "resposta": "Os valores variam conforme o projeto, mas o melhor jeito de conseguir um orçamento direto, rápido e certeiro é falando com o criador. Clique aqui para ir ao nosso WhatsApp:",
+        "resposta": "Os valores variam conforme o projeto, mas o melhor jeito de conseguir um orçamento direto, rápido e certeiro é falando com o criador. Pode clicar no botão abaixo pra abrir o WhatsApp:",
         "showButton": true,
         "link": "https://wa.me/5511939014504"
       },
