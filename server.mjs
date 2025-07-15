@@ -165,9 +165,7 @@ app.post('/ask', async (req, res) => {
     sessao.temaForaCount++;
 
     if (sessao.temaForaCount >= 2) {
-      texto += '
-
-Aliás, só pra lembrar: meu foco aqui é te ajudar com os serviços da Forma Nexus — sites, feeds, textos e muito mais. Se quiser transformar isso num conteúdo profissional, fala com o criador: https://wa.me/5511939014504';
+texto += "\\n\\nAliás, só pra lembrar: meu foco aqui é te ajudar com os serviços da Forma Nexus — sites, feeds, textos e muito mais. Se quiser transformar isso num conteúdo profissional, fala com o criador: https://wa.me/5511939014504";
       sessao.temaForaCount = 0; // reset após aviso
     }
   } else {
