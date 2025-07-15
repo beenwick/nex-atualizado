@@ -53,6 +53,69 @@ export const baseConhecimento = {
       "email": "contato@formanexus.com",
       "frase": "Se quiser falar com o criador do Forma Nexus, é só chamar no WhatsApp: (11) 94901-4504! Ou mandar um e-mail para contato@formanexus.com. Ele responde rapidinho — e com muito carisma, viu?"
     },
+
+    "intencaoUsuario": {
+  "criarSite": {
+    "sinonimos": [
+      "quero um site",
+      "preciso de um site",
+      "criar um site",
+      "fazer um site",
+      "gostaria de um site",
+      "um site novo",
+      "site bonito",
+      "comprar site pronto",
+      "ter um site",
+      "um site pra mim",
+      "como faço um site",
+      "quero comprar um site"
+    ],
+    "resposta": "Aqui na Forma Nexus, a gente cria sites personalizados, bonitos, prontos pra funcionar e com foco na sua marca. Se quiser algo elegante, funcional e com presença forte, é só me chamar."
+  },
+  "feedInstagram": {
+    "sinonimos": [
+      "quero um feed",
+      "preciso de feed",
+      "layout do instagram",
+      "meu insta tá feio",
+      "feed organizado",
+      "quero melhorar meu instagram",
+      "postagens pro instagram",
+      "como montar um feed",
+      "instagram bonito",
+      "visual do insta",
+      "identidade visual instagram"
+    ],
+    "resposta": "A gente monta feeds lindos e estratégicos, com identidade visual, estética profissional e conteúdo coerente com seu público. Se quiser transformar seu Insta, só dizer!"
+  },
+  "pacotePostagens": {
+    "sinonimos": [
+      "tem pacotes de postagens?",
+      "quantos posts vêm?",
+      "tem carrossel?",
+      "como funciona o pacote de posts?",
+      "quero contratar posts",
+      "vocês fazem post pra instagram?",
+      "pacote de post",
+      "dá pra fazer carrossel?",
+      "quero conteúdo pro insta"
+    ],
+    "resposta": "Sim! Temos pacotes com vários posts (inclusive carrosséis), todos feitos com identidade visual, conteúdo relevante e estratégia. Me fala o estilo e a frequência que você quer que eu te explico!"
+  },
+  "contato": {
+    "sinonimos": [
+      "como falo com vocês?",
+      "quero conversar",
+      "tem whatsapp?",
+      "como entro em contato?",
+      "quero falar com alguém",
+      "quero atendimento humano",
+      "quero tirar uma dúvida com você",
+      "tem alguém aí?"
+    ],
+    "resposta": "Pode chamar direto no WhatsApp: (11) 94901-4504 📲 Ou manda um e-mail para contato@formanexus.com. Respondemos com carisma e sem enrolar!"
+  }
+},
     "servicoFeed": "Fazemos sim! A Forma Nexus entrega o feed completo, bonitão e planejado. Você só precisa postar — ou nem isso, se quiser deixar com a gente.",
     "exemplosFeed": [
       "Artístico e cósmico (@formanexus)",

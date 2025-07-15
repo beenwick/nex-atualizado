@@ -1,23 +1,23 @@
-// utils.mjs
+import stringSimilarity from 'string-similarity';
 
-export function limparMensagem(texto) {
-  return texto.trim()
-    .replace(/^[^\wÀ-ÿ0-9]+|[^\wÀ-ÿ0-9]+$/g, '')
-    .replace(/\s{2,}/g, ' ');
+/**
+ * Detecta múltiplas intenções do usuário com base em expressões conhecidas.
+ * @param {string} mensagem - Mensagem do usuário.
+ * @param {object} intencoes - Objeto com intenções e variações conhecidas.
+ * @returns {string[]} - Lista de chaves de intenções detectadas.
+ */
+export function detectarIntencao(mensagem, intencoes) {
+  const entrada = mensagem.toLowerCase();
+  const limiar = 0.6;
+  const intencoesDetectadas = [];
+
+  for (const chave in intencoes) {
+    const variacoes = intencoes[chave];
+    const correspondencia = stringSimilarity.findBestMatch(entrada, variacoes.map(v => v.toLowerCase()));
+    if (correspondencia.bestMatch.rating > limiar) {
+      intencoesDetectadas.push(chave);
+    }
+  }
+
+  return intencoesDetectadas;
 }
-
-export function detectarNome(texto) {
-  const padroes = [
-    /(?:meu nome é|me chamo|sou o|sou a|pode me chamar de)\s+([\wÀ-ÿ]+)/i
-  ];
-  for (const padrao of padroes) {
-    const m = texto.match(padrao);
-    if (m && m[1]) return m[1].trim();
-  }
-
-  const trimmed = texto.trim();
-  if (/^[A-Za-zÀ-ÿ]+$/.test(trimmed) && trimmed.split(' ').length === 1) {
-    return trimmed;
-  }
-  return null;
-} 

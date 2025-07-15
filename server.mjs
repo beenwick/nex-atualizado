@@ -7,7 +7,8 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { SystemMessage, HumanMessage } from '@langchain/core/messages';
-import { limparMensagem, detectarNome } from './utils.mjs';
+import { limparMensagem, detectarNome, detectarIntencao } from './utils.mjs';
+import { baseConhecimento } from './nexBaseConhecimento.mjs';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -16,16 +17,16 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Carrega a base de conhecimento
-let baseConhecimento = '';
+let baseConhecimentoTexto = '';
 try {
-  baseConhecimento = fs.readFileSync('./nexBaseConhecimento.mjs', 'utf8');
+  baseConhecimentoTexto = fs.readFileSync('./nexBaseConhecimento.mjs', 'utf8');
 } catch (err) {
   console.error('Erro ao ler base de conhecimento:', err);
 }
 
 // Prepara o vector store
 const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 500, chunkOverlap: 50 });
-const docs = await splitter.createDocuments([baseConhecimento]);
+const docs = await splitter.createDocuments([baseConhecimentoTexto]);
 const embeddings = new OpenAIEmbeddings();
 const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
 
@@ -38,6 +39,11 @@ const instrucoesNex = `... (mantido conforme original)`;
 // Gerencia sessões
 const sessoes = new Map();
 
+function mensagemEhVaga(msg) {
+  const termosVagos = ['e o', 'sobre isso', 'e a', 'e o site', 'e o feed', 'e a identidade'];
+  return termosVagos.some(t => msg.toLowerCase().includes(t)) || msg.trim().split(' ').length <= 3;
+}
+
 app.post('/ask', async (req, res) => {
   const { message, sessionId } = req.body;
   if (!message || !sessionId) {
@@ -45,7 +51,7 @@ app.post('/ask', async (req, res) => {
   }
 
   if (!sessoes.has(sessionId)) {
-    sessoes.set(sessionId, { historico: [], nome: null, saudacaoFeita: false });
+    sessoes.set(sessionId, { historico: [], nome: null, saudacaoFeita: false, ultimaIntencao: null });
   }
   const sessao = sessoes.get(sessionId);
 
@@ -69,6 +75,28 @@ app.post('/ask', async (req, res) => {
     }
   }
 
+  // Detectar intenção com base atual e contexto anterior
+  const intencoes = detectarIntencao(mensagemLimpa, baseConhecimento.intencaoUsuario, true); // <- retorna array
+  let respostaComposta = [];
+
+  if (mensagemEhVaga(mensagemLimpa) && sessao.ultimaIntencao) {
+    intencoes.push(sessao.ultimaIntencao);
+  }
+
+  for (const chave of new Set(intencoes)) {
+    if (!sessao.historico.some(h => h.bot.includes(baseConhecimento.intencaoUsuario[chave]?.resposta))) {
+      respostaComposta.push(baseConhecimento.intencaoUsuario[chave]?.resposta);
+    }
+  }
+
+  if (respostaComposta.length) {
+    sessao.ultimaIntencao = intencoes[intencoes.length - 1];
+    const texto = respostaComposta.join('\n\n');
+    sessao.historico.push({ user: mensagemOriginal, bot: texto });
+    return res.json({ reply: texto });
+  }
+
+  // Segue com embeddings caso não detecte intenção
   const retriever = vectorStore.asRetriever();
   const docs = await retriever.getRelevantDocuments(mensagemLimpa);
   const contexto = docs.map(d => d.pageContent).join("\n\n");
@@ -94,6 +122,7 @@ app.post('/ask', async (req, res) => {
     texto = `Boa pergunta! IA é a tecnologia por trás da inteligência — tipo eu. Chatbot é a interface que conversa com você. Com IA, ele fica menos burro. 😉`;
   }
 
+  sessao.ultimaIntencao = intencoes[0] || null;
   sessao.historico.push({ user: mensagemOriginal, bot: texto });
   return res.json({ reply: texto });
 });
