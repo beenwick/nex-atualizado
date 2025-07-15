@@ -76,27 +76,30 @@ app.post('/ask', async (req, res) => {
   }
 
   // Detectar intenção com base atual e contexto anterior
-  const intencoes = detectarIntencao(mensagemLimpa, baseConhecimento.intencaoUsuario, true); // <- retorna array
+  let intencoes = detectarIntencao(mensagemLimpa, baseConhecimento.intencaoUsuario);
   let respostaComposta = [];
 
+  // Se a mensagem for vaga e houver uma intenção anterior, reaproveita
   if (mensagemEhVaga(mensagemLimpa) && sessao.ultimaIntencao) {
     intencoes.push(sessao.ultimaIntencao);
   }
 
+  // Garante que não repita respostas anteriores
   for (const chave of new Set(intencoes)) {
-    if (!sessao.historico.some(h => h.bot.includes(baseConhecimento.intencaoUsuario[chave]?.resposta))) {
-      respostaComposta.push(baseConhecimento.intencaoUsuario[chave]?.resposta);
+    const respostaBase = baseConhecimento.intencaoUsuario[chave]?.resposta;
+    if (respostaBase && !sessao.historico.some(h => h.bot.includes(respostaBase))) {
+      respostaComposta.push(respostaBase);
     }
   }
 
   if (respostaComposta.length) {
-    sessao.ultimaIntencao = intencoes[intencoes.length - 1];
+    sessao.ultimaIntencao = intencoes[intencoes.length - 1] || null;
     const texto = respostaComposta.join('\n\n');
     sessao.historico.push({ user: mensagemOriginal, bot: texto });
     return res.json({ reply: texto });
   }
 
-  // Segue com embeddings caso não detecte intenção
+  // Caso não detecte intenção, segue com embeddings
   const retriever = vectorStore.asRetriever();
   const docs = await retriever.getRelevantDocuments(mensagemLimpa);
   const contexto = docs.map(d => d.pageContent).join("\n\n");

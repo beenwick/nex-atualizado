@@ -1,4 +1,4 @@
-import stringSimilarity from 'string-similarity';
+import stringSimilarity from 'string-similarity'
 
 /**
  * Remove pontuação e espaços extras da mensagem.
@@ -33,12 +33,20 @@ export function detectarNome(texto) {
 
 /**
  * Detecta múltiplas intenções do usuário com base em expressões conhecidas.
+ * Ignora mensagens muito curtas que podem ser apenas nomes.
  * @param {string} mensagem - Mensagem do usuário.
  * @param {object} intencoes - Objeto com intenções e variações conhecidas.
  * @returns {string[]} - Lista de chaves de intenções detectadas.
  */
 export function detectarIntencao(mensagem, intencoes) {
-  const entrada = mensagem.toLowerCase();
+  const entrada = mensagem.toLowerCase().trim();
+
+  // Proteção extra: se for muito curta e parecer só um nome (ex: "Hugo"), ignora
+  const palavras = entrada.split(/\s+/);
+  if (palavras.length === 1 && /^[a-zA-ZÀ-ÿ]+$/.test(palavras[0]) && entrada.length <= 12) {
+    return [];
+  }
+
   const limiar = 0.6;
   const intencoesDetectadas = [];
 
