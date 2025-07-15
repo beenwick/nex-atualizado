@@ -152,19 +152,13 @@ export const baseConhecimento = {
       },
       "orcamento": {
         "sinonimos": [
-          "quanto custa?",
-          "qual o valor?",
-          "quero um orçamento",
-          "quanto cobram?",
-          "valor do serviço",
-          "qual o preço?",
-          "me passa o orçamento",
-          "preço de um site",
-          "quanto fica?",
-          "quero saber o preço"
+          "quanto custa?", "qual o valor?", "quero um orçamento", "quanto cobram?",
+          "valor do serviço", "qual o preço?", "me passa o orçamento", "preço de um site",
+          "quanto fica?", "quero saber o preço"
         ],
-        resposta: "Os valores variam conforme o projeto, mas o melhor jeito de conseguir um orçamento direto, rápido e certeiro é falando com o criador. Clique aqui para ir ao nosso WhatsApp:",
-
+        "resposta": "Os valores variam conforme o projeto, mas o melhor jeito de conseguir um orçamento direto, rápido e certeiro é falando com o criador. Clique aqui para ir ao nosso WhatsApp:",
+        "showButton": true,
+        "link": "https://wa.me/5511939014504"
       },
       "tema_fora": {
         "sinonimos": [
