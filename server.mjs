@@ -35,8 +35,8 @@ const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 500, chunkOverl
 const docs = await splitter.createDocuments([baseConhecimentoTexto]);
 const embeddings = new OpenAIEmbeddings();
 const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
-
 const chat = new ChatOpenAI({ modelName: 'gpt-3.5-turbo', temperature: 0.7 });
+
 const sessoes = new Map();
 
 function mensagemEhVaga(msg) {
@@ -59,9 +59,7 @@ app.post('/ask', async (req, res) => {
   const mensagemLimpa = limparMensagem(message);
 
   if (temMultiplasPerguntas(mensagemOriginal)) {
-    return res.json({
-      reply: 'Você mandou várias coisas juntas. Me diz uma de cada vez pra eu te ajudar melhor, beleza?'
-    });
+    return res.json({ reply: 'Você mandou várias coisas juntas. Me diz uma de cada vez pra eu te ajudar melhor, beleza?' });
   }
 
   if (!sessao.nome) {
@@ -81,6 +79,7 @@ app.post('/ask', async (req, res) => {
     if (nomeRepetido && nomeRepetido.toLowerCase() === sessao.nome.toLowerCase()) {
       return res.json({ reply: `Tamo junto, ${sessao.nome}. Pode mandar ver, tô aqui!` });
     }
+
     if (
       mensagemLimpa === sessao.nome.toLowerCase() ||
       mensagemOriginal.trim().toLowerCase() === sessao.nome.toLowerCase()
@@ -91,6 +90,7 @@ app.post('/ask', async (req, res) => {
     }
   }
 
+  // 🟡 Detectar intenção
   let intencoes = detectarIntencao(mensagemLimpa, baseConhecimento.intencaoUsuario);
   let respostaComposta = [];
 
@@ -98,6 +98,17 @@ app.post('/ask', async (req, res) => {
     intencoes.push(sessao.ultimaIntencao);
   }
 
+  // 🟢 NOVO: Se intenção for "orcamento", responder com redirecionamento
+  if (intencoes.includes('orcamento')) {
+    const texto =
+      'O melhor jeito de falarmos sobre valores é no nosso WhatsApp! Lá a gente entende rapidinho o que você quer e já passa uma ideia de orçamento:\n\n👉 https://wa.me/5511939014504';
+    const respostaFinal = personalizarResposta(texto, sessao.nome, true);
+    sessao.historico.push({ user: mensagemOriginal, bot: respostaFinal });
+    sessao.ultimaIntencao = 'orcamento';
+    return res.json({ reply: respostaFinal });
+  }
+
+  // Se encontrou respostas na base manual
   for (const chave of new Set(intencoes)) {
     const resposta = baseConhecimento.intencaoUsuario[chave]?.resposta;
     const jaEnviado = sessao.historico.some(h => h.bot.trim() === resposta?.trim());
@@ -109,8 +120,7 @@ app.post('/ask', async (req, res) => {
   if (respostaComposta.length) {
     sessao.ultimaIntencao = intencoes[intencoes.length - 1] || null;
     const texto = respostaComposta.join('\n\n');
-    const encerrar = intencoes.includes('agradecimento') || intencoes.includes('despedida');
-    const respostaFinal = personalizarResposta(texto, sessao.nome, encerrar);
+    const respostaFinal = personalizarResposta(texto, sessao.nome, false);
     sessao.historico.push({ user: mensagemOriginal, bot: respostaFinal });
     return res.json({ reply: respostaFinal });
   }
@@ -135,7 +145,7 @@ app.post('/ask', async (req, res) => {
   try {
     resposta = await chat.call(messages);
   } catch (err) {
-    console.error('Erro ao chamar IA contextual:', err);
+    console.error('Erro ao chamar IA:', err);
     return res.status(500).json({
       reply: 'Tô meio bugado agora... tenta de novo mais tarde 😵‍💫'
     });
@@ -143,22 +153,18 @@ app.post('/ask', async (req, res) => {
 
   let texto = resposta.content.trim();
 
-  // ⚠️ Se for ruim, vazia ou genérica — usar fallback com IA geral
+  // Fallback para IA geral se resposta ruim
   if (respostaEhRuim(texto)) {
-    try {
-      const fallback = await chat.call([
-        new SystemMessage('Responda de forma direta, carismática e eficiente. Seja objetivo, natural e confiante.'),
-        new HumanMessage(mensagemLimpa)
-      ]);
-      texto = fallback.content.trim();
-    } catch (e) {
-      console.error('Erro na IA fallback:', e);
-      texto = 'Não consegui bolar uma boa resposta agora. Bora tentar de outro jeito? 🤔';
-    }
+    const fallback = await chat.call([
+      new SystemMessage(instrucoesNex),
+      new HumanMessage(mensagemLimpa)
+    ]);
+    texto = fallback.content.trim();
   }
 
   const encerrar = intencoes.includes('agradecimento') || intencoes.includes('despedida');
   const respostaFinal = personalizarResposta(texto, sessao.nome, encerrar);
+
   sessao.ultimaIntencao = intencoes[0] || null;
   sessao.historico.push({ user: mensagemOriginal, bot: respostaFinal });
   return res.json({ reply: respostaFinal });
