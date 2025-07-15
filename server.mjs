@@ -154,11 +154,24 @@ app.post('/ask', async (req, res) => {
   let texto = resposta.content.trim();
 
   
-  // 🟢 REDIRECIONAR FOCO PARA FORMA NEXUS SE ASSUNTO FOR MUITO FORA DO TEMA
-  const temasFora = ['academia', 'dieta', 'suplemento', 'creatina', 'musculação', 'exercício', 'treino', 'fitness', 'nutrição'];
-  const falouDeTemaFora = temasFora.some(t => mensagemLimpa.toLowerCase().includes(t));
-  if (falouDeTemaFora) {
-    texto += '\n\nMas ó… só pra não fugir do foco: aqui na Forma Nexus, a gente cria sites, feeds e até redações personalizadas. Se quiser transformar essa ideia num conteúdo top, fala com o criador aqui: https://wa.me/5511939014504';
+  
+  // 🧠 MELHORIA: Controle de temas fora do escopo da Forma Nexus
+  sessao.temaForaCount = sessao.temaForaCount || 0;
+
+  const textoEhMuitoFora = !texto.toLowerCase().match(/(site|feed|instagram|texto|redação|portfólio|forma nexus|serviço|criação|layout|orcamento|preço|projeto)/);
+  const intencaoFora = !intencoes.some(i => ['orcamento', 'duvida_tecnica', 'contratacao', 'servico', 'portifolio', 'blog'].includes(i));
+
+  if (textoEhMuitoFora && intencaoFora) {
+    sessao.temaForaCount++;
+
+    if (sessao.temaForaCount >= 2) {
+      texto += '
+
+Aliás, só pra lembrar: meu foco aqui é te ajudar com os serviços da Forma Nexus — sites, feeds, textos e muito mais. Se quiser transformar isso num conteúdo profissional, fala com o criador: https://wa.me/5511939014504';
+      sessao.temaForaCount = 0; // reset após aviso
+    }
+  } else {
+    sessao.temaForaCount = 0; // reset se voltou ao tema
   }
 
 
