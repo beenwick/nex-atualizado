@@ -71,8 +71,16 @@ app.post('/ask', async (req, res) => {
   } else {
     const nomeRepetido = detectarNome(mensagemOriginal);
     if (nomeRepetido && nomeRepetido.toLowerCase() === sessao.nome.toLowerCase()) {
-      return res.json({ reply: `Calma aí, ${sessao.nome}, tô meio lerdo hoje, já entendi.` });
-    }
+  return res.json({ reply: `Tamo junto, ${sessao.nome}. Pode mandar ver, tô aqui!` });
+}
+
+if (
+  mensagemLimpa === sessao.nome.toLowerCase() ||
+  mensagemOriginal.trim().toLowerCase() === sessao.nome.toLowerCase()
+) {
+  return res.json({ reply: `Tô ligado que você é o ${sessao.nome}. Me diz o que você quer saber! 😎` });
+}
+
   }
 
   // Detectar intenção com base atual e contexto anterior
@@ -85,12 +93,15 @@ app.post('/ask', async (req, res) => {
   }
 
   // Garante que não repita respostas anteriores
-  for (const chave of new Set(intencoes)) {
-    const respostaBase = baseConhecimento.intencaoUsuario[chave]?.resposta;
-    if (respostaBase && !sessao.historico.some(h => h.bot.includes(respostaBase))) {
-      respostaComposta.push(respostaBase);
-    }
+ for (const chave of new Set(intencoes)) {
+  const resposta = baseConhecimento.intencaoUsuario[chave]?.resposta;
+  const jaEnviado = sessao.historico.some(h => h.bot.trim() === resposta.trim());
+
+  if (resposta && !jaEnviado) {
+    respostaComposta.push(resposta);
   }
+}
+
 
   if (respostaComposta.length) {
     sessao.ultimaIntencao = intencoes[intencoes.length - 1] || null;
