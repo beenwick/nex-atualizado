@@ -112,3 +112,16 @@ export function respostaEhRuim(texto) {
   ];
   return ruim.some(r => texto.toLowerCase().includes(r)) || texto.length < 15;
 }
+
+/**
+ * Detecta se a conversa está saindo do tema central dos serviços da Forma Nexus.
+ * @param {string[]} intencoesDetectadas
+ * @returns {boolean}
+ */
+export function intencaoEhForaDoTema(intencoesDetectadas) {
+  const intencoesPermitidas = [
+    'site', 'orcamento', 'feed', 'texto', 'servicos', 'copy', 'blog', 'podcast',
+    'redacao', 'instagram', 'login', 'loja', 'portfolio', 'navegacao', 'sobre'
+  ];
+  return intencoesDetectadas.every(intencao => !intencoesPermitidas.includes(intencao));
+}

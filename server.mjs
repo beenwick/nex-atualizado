@@ -1,3 +1,5 @@
+// server.mjs
+
 import {
   limparMensagem,
   detectarNome,
@@ -51,7 +53,14 @@ app.post('/ask', async (req, res) => {
   }
 
   if (!sessoes.has(sessionId)) {
-    sessoes.set(sessionId, { historico: [], nome: null, saudacaoFeita: false, ultimaIntencao: null });
+    sessoes.set(sessionId, {
+      historico: [],
+      nome: null,
+      saudacaoFeita: false,
+      ultimaIntencao: null,
+      temaForaCount: 0,
+      intencaoTemaFora: false
+    });
   }
   const sessao = sessoes.get(sessionId);
 
@@ -70,53 +79,38 @@ app.post('/ask', async (req, res) => {
     }
     if (!sessao.saudacaoFeita) {
       sessao.saudacaoFeita = true;
-      return res.json({
-        reply: 'Aí, camarada, antes de nos aprofundarmos, me diz: como posso te chamar aqui no chat?'
-      });
+      return res.json({ reply: 'Aí, camarada, antes de nos aprofundarmos, me diz: como posso te chamar aqui no chat?' });
     }
   } else {
     const nomeRepetido = detectarNome(mensagemOriginal);
     if (nomeRepetido && nomeRepetido.toLowerCase() === sessao.nome.toLowerCase()) {
       return res.json({ reply: `Tamo junto, ${sessao.nome}. Pode mandar ver, tô aqui!` });
     }
-
-    if (
-      mensagemLimpa === sessao.nome.toLowerCase() ||
-      mensagemOriginal.trim().toLowerCase() === sessao.nome.toLowerCase()
-    ) {
-      return res.json({
-        reply: `Tô ligado que você é o ${sessao.nome}. Me diz o que você quer saber! 😎`
-      });
+    if (mensagemLimpa === sessao.nome.toLowerCase()) {
+      return res.json({ reply: `Tô ligado que você é o ${sessao.nome}. Me diz o que você quer saber! 😎` });
     }
   }
 
-  // 🟡 Detectar intenção
   let intencoes = detectarIntencao(mensagemLimpa, baseConhecimento.intencaoUsuario);
-  let respostaComposta = [];
-
   if (mensagemEhVaga(mensagemLimpa) && sessao.ultimaIntencao) {
     intencoes.push(sessao.ultimaIntencao);
   }
 
-  // 🟢 NOVO: Se intenção for "orcamento", responder com redirecionamento
+  // Intenção "orcamento"
   if (intencoes.includes('orcamento')) {
-    const texto =
-      'O melhor jeito de falarmos sobre valores é no nosso WhatsApp! Lá a gente entende rapidinho o que você quer e já passa uma ideia de orçamento:\n\n👉 https://wa.me/5511939014504';
+    const texto = 'O melhor jeito de falarmos sobre valores é no nosso WhatsApp!\n\n👉 https://wa.me/5511939014504';
     const respostaFinal = personalizarResposta(texto, sessao.nome, true);
     sessao.historico.push({ user: mensagemOriginal, bot: respostaFinal });
     sessao.ultimaIntencao = 'orcamento';
     return res.json({ reply: respostaFinal });
   }
 
-  // Se encontrou respostas na base manual
+  const respostaComposta = [];
   for (const chave of new Set(intencoes)) {
     const resposta = baseConhecimento.intencaoUsuario[chave]?.resposta;
     const jaEnviado = sessao.historico.some(h => h.bot.trim() === resposta?.trim());
-    if (resposta && !jaEnviado) {
-      respostaComposta.push(resposta);
-    }
+    if (resposta && !jaEnviado) respostaComposta.push(resposta);
   }
-
   if (respostaComposta.length) {
     sessao.ultimaIntencao = intencoes[intencoes.length - 1] || null;
     const texto = respostaComposta.join('\n\n');
@@ -146,40 +140,38 @@ app.post('/ask', async (req, res) => {
     resposta = await chat.call(messages);
   } catch (err) {
     console.error('Erro ao chamar IA:', err);
-    return res.status(500).json({
-      reply: 'Tô meio bugado agora... tenta de novo mais tarde 😵‍💫'
-    });
+    return res.status(500).json({ reply: 'Tô meio bugado agora... tenta de novo mais tarde 😵‍💫' });
   }
 
   let texto = resposta.content.trim();
 
-  
-  
-  // 🧠 MELHORIA: Controle de temas fora do escopo da Forma Nexus
-  sessao.temaForaCount = sessao.temaForaCount || 0;
-
-  const textoEhMuitoFora = !texto.toLowerCase().match(/(site|feed|instagram|texto|redação|portfólio|forma nexus|serviço|criação|layout|orcamento|preço|projeto)/);
+  const textoEhMuitoFora = !texto.toLowerCase().match(/(forma nexus|site|feed|texto|portf[oó]lio|cria[çc][aã]o|servi[çc]o|identidade visual|instagram|blog|landing page|orcamento|pre[çc]o|pacote|conte[úu]do)/);
   const intencaoFora = !intencoes.some(i => ['orcamento', 'duvida_tecnica', 'contratacao', 'servico', 'portifolio', 'blog'].includes(i));
 
   if (textoEhMuitoFora && intencaoFora) {
     sessao.temaForaCount++;
+    sessao.intencaoTemaFora = true;
 
     if (sessao.temaForaCount >= 2) {
-texto += "\\n\\nAliás, só pra lembrar: meu foco aqui é te ajudar com os serviços da Forma Nexus — sites, feeds, textos e muito mais. Se quiser transformar isso num conteúdo profissional, fala com o criador: https://wa.me/5511939014504";
-      sessao.temaForaCount = 0; // reset após aviso
+      texto += '\n\nAliás, só pra lembrar: meu foco aqui é te ajudar com os serviços da Forma Nexus — sites, feeds, textos e muito mais. Se quiser transformar isso num conteúdo profissional, fala com o criador: https://wa.me/5511939014504';
+      sessao.temaForaCount = 0;
     }
   } else {
-    sessao.temaForaCount = 0; // reset se voltou ao tema
+    sessao.temaForaCount = 0;
+    sessao.intencaoTemaFora = false;
   }
 
-
-  // Fallback para IA geral se resposta ruim
   if (respostaEhRuim(texto)) {
     const fallback = await chat.call([
       new SystemMessage(instrucoesNex),
       new HumanMessage(mensagemLimpa)
     ]);
     texto = fallback.content.trim();
+  }
+
+  if (sessao.intencaoTemaFora && !texto.includes('Forma Nexus')) {
+    texto += '\n\nAliás, só pra lembrar: meu foco aqui é te ajudar com os serviços da Forma Nexus. Me conta se quiser um site, feed, texto ou algo assim!';
+    sessao.intencaoTemaFora = false;
   }
 
   const encerrar = intencoes.includes('agradecimento') || intencoes.includes('despedida');
