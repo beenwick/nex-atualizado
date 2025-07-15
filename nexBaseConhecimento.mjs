@@ -163,7 +163,8 @@ export const baseConhecimento = {
           "quanto fica?",
           "quero saber o preço"
         ],
-        "resposta": "Os valores variam conforme o projeto, mas o melhor jeito de conseguir um orçamento direto, rápido e certeiro é falando com o criador. Clica aqui pra chamar no WhatsApp: https://wa.me/5511949014504"
+        resposta: "Os valores variam conforme o projeto, mas o melhor jeito de conseguir um orçamento direto, rápido e certeiro é falando com o criador. Clique aqui para ir ao nosso WhatsApp:",
+
       },
       "tema_fora": {
         "sinonimos": [
