@@ -1,10 +1,12 @@
 // server.mjs
+import dotenv from "dotenv";
+dotenv.config();
 
 import {
   limparMensagem,
   detectarNome,
   detectarIntencao,
-  temMultiplasPerguntas,
+  // temMultiplasPerguntas,  // mantido por compatibilidade, mas não usado para múltiplas perguntas
   personalizarResposta,
   respostaEhRuim
 } from './utils.mjs';
@@ -25,6 +27,12 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
+
+// Função para detectar múltiplas perguntas relevantes (apenas por interrogação)
+function temMultiplasPerguntasRelevantes(msg) {
+  const count = (msg.match(/\?/g) || []).length;
+  return count > 1;
+}
 
 let baseConhecimentoTexto = '';
 try {
@@ -58,8 +66,7 @@ app.post('/ask', async (req, res) => {
       nome: null,
       saudacaoFeita: false,
       ultimaIntencao: null,
-      temaForaCount: 0,
-      intencaoTemaFora: false
+      temaForaCount: 0
     });
   }
   const sessao = sessoes.get(sessionId);
@@ -67,10 +74,12 @@ app.post('/ask', async (req, res) => {
   const mensagemOriginal = message;
   const mensagemLimpa = limparMensagem(message);
 
-  if (temMultiplasPerguntas(mensagemOriginal)) {
-    return res.json({ reply: 'Você mandou várias coisas juntas. Me diz uma de cada vez pra eu te ajudar melhor, beleza?' });
+  // Substituído: não bloqueia mais mensagens com múltiplas sentenças por pontos
+  if (temMultiplasPerguntasRelevantes(mensagemOriginal)) {
+    return res.json({ reply: 'Percebi várias perguntas; vou responder na ordem. Primeiro, vamos lá:' });
   }
 
+  // Fluxo de nome e saudação
   if (!sessao.nome) {
     const nome = detectarNome(mensagemOriginal);
     if (nome) {
@@ -91,14 +100,15 @@ app.post('/ask', async (req, res) => {
     }
   }
 
+  // Detectar intenção
   let intencoes = detectarIntencao(mensagemLimpa, baseConhecimento.intencaoUsuario);
   if (mensagemEhVaga(mensagemLimpa) && sessao.ultimaIntencao) {
     intencoes.push(sessao.ultimaIntencao);
   }
 
-  // Intenção "orcamento"
+  // Intenção "orcamento" com botão
   if (intencoes.includes('orcamento')) {
-    const texto = 'Os valores variam conforme o projeto, mas o melhor jeito de conseguir um orçamento direto, rápido e certeiro é falando com o criador. Clique abaixo para ir ao nosso WhatsApp:';
+    const texto = 'Os valores variam conforme o projeto, mas o melhor jeito de conseguir um orçamento direto, rápido e certeiro é falando com o criador. Pode clicar no botão abaixo pra abrir o WhatsApp e tirar essa dúvida:';
     const respostaFinal = personalizarResposta(texto, sessao.nome, false);
     sessao.historico.push({ user: mensagemOriginal, bot: respostaFinal });
     sessao.ultimaIntencao = 'orcamento';
@@ -108,11 +118,13 @@ app.post('/ask', async (req, res) => {
     });
   }
 
+  // Respostas da base manual
   const respostaComposta = [];
   for (const chave of new Set(intencoes)) {
-    const resposta = baseConhecimento.intencaoUsuario[chave]?.resposta;
-    const jaEnviado = sessao.historico.some(h => h.bot.trim() === resposta?.trim());
-    if (resposta && !jaEnviado) respostaComposta.push(resposta);
+    const resp = baseConhecimento.intencaoUsuario[chave]?.resposta;
+    if (resp && !sessao.historico.some(h => h.bot.trim() === resp.trim())) {
+      respostaComposta.push(resp);
+    }
   }
   if (respostaComposta.length) {
     sessao.ultimaIntencao = intencoes[intencoes.length - 1] || null;
@@ -122,46 +134,50 @@ app.post('/ask', async (req, res) => {
     return res.json({ reply: respostaFinal });
   }
 
+  // Fallback via embeddings
   const retriever = vectorStore.asRetriever();
-  const docs = await retriever.getRelevantDocuments(mensagemLimpa);
-  const contexto = docs.map(d => d.pageContent).join('\n\n');
+  const docsRelevantes = await retriever.getRelevantDocuments(mensagemLimpa);
+  const contexto = docsRelevantes.map(d => d.pageContent).join('\n\n');
 
-  const mensagensRecentes = sessao.historico.slice(-3).flatMap(item => [
-    new HumanMessage(item.user),
-    new SystemMessage(item.bot)
+  const recentMsgs = sessao.historico.slice(-3).flatMap(h => [
+    new HumanMessage(h.user),
+    new SystemMessage(h.bot)
   ]);
 
   const messages = [
     new SystemMessage(instrucoesNex),
     new SystemMessage(`Base de conhecimento:\n${contexto}`),
-    ...mensagensRecentes,
+    ...recentMsgs,
     new HumanMessage(mensagemLimpa)
   ];
 
-  let resposta;
+  let respostaIA;
   try {
-    resposta = await chat.call(messages);
+    respostaIA = await chat.call(messages);
   } catch (err) {
     console.error('Erro ao chamar IA:', err);
     return res.status(500).json({ reply: 'Tô meio bugado agora... tenta de novo mais tarde 😵‍💫' });
   }
 
-  let texto = resposta.content.trim();
+  let texto = respostaIA.content.trim();
 
-  const textoEhMuitoFora = !texto.toLowerCase().match(/(forma nexus|site|feed|texto|portf[oó]lio|cria[çc][aã]o|servi[çc]o|identidade visual|instagram|blog|landing page|orcamento|pre[çc]o|pacote|conte[úu]do)/);
-  const intencaoFora = !intencoes.some(i => ['orcamento', 'duvida_tecnica', 'contratacao', 'servico', 'portifolio', 'blog'].includes(i));
+  // Controle de off-topic
+  const foraRegex = /(forma nexus|site|feed|texto|portf[oó]lio|cria[cç][aã]o|servi[cç]o|instagram|blog|landing page|pre[cç]o|pacote|conte[úu]do)/i;
+  const ehFora = !foraRegex.test(texto) && !foraRegex.test(mensagemLimpa);
 
-  if (textoEhMuitoFora && intencaoFora) {
+  if (ehFora) {
     sessao.temaForaCount++;
-    sessao.intencaoTemaFora = true;
-
     if (sessao.temaForaCount >= 2) {
-      texto += '\n\nAliás, só pra lembrar: meu foco aqui é te ajudar com os serviços da Forma Nexus — sites, feeds, textos e muito mais. Se quiser transformar isso num conteúdo profissional, fala com o criador: https://wa.me/5511939014504';
+      const lembrete = 'Aliás, só pra lembrar: meu foco aqui é te ajudar com os serviços da Forma Nexus — sites, feeds, textos e muito mais. Se quiser transformar isso num conteúdo profissional, clica no botão abaixo pra falar com o criador direto.';
+      const lembreteFinal = personalizarResposta(lembrete, sessao.nome, false);
       sessao.temaForaCount = 0;
+      return res.json({
+        reply: lembreteFinal,
+        button: `<a href=\"https://wa.me/5511939014504\" target=\"_blank\">Abrir WhatsApp</a>`
+      });
     }
   } else {
     sessao.temaForaCount = 0;
-    sessao.intencaoTemaFora = false;
   }
 
   if (respostaEhRuim(texto)) {
@@ -170,11 +186,6 @@ app.post('/ask', async (req, res) => {
       new HumanMessage(mensagemLimpa)
     ]);
     texto = fallback.content.trim();
-  }
-
-  if (sessao.intencaoTemaFora && !texto.includes('Forma Nexus')) {
-    texto += '\n\nAliás, só pra lembrar: meu foco aqui é te ajudar com os serviços da Forma Nexus. Me conta se quiser um site, feed, texto ou algo assim!';
-    sessao.intencaoTemaFora = false;
   }
 
   const encerrar = intencoes.includes('agradecimento') || intencoes.includes('despedida');
