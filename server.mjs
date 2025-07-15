@@ -96,7 +96,6 @@ app.post('/ask', async (req, res) => {
     intencoes.push(sessao.ultimaIntencao);
   }
 
-  // Intenção "orcamento"
   if (intencoes.includes('orcamento')) {
     const texto = 'Os valores variam conforme o projeto, mas o melhor jeito de conseguir um orçamento direto, rápido e certeiro é falando com o criador. Clique abaixo para ir ao nosso WhatsApp:';
     const respostaFinal = personalizarResposta(texto, sessao.nome, false);
