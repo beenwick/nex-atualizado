@@ -1,11 +1,3 @@
-import {
-  limparMensagem,
-  detectarNome,
-  detectarIntencao,
-  temMultiplasPerguntas,
-  personalizarResposta // ⬅️ novo
-} from './utils.mjs';
-import { instrucoesNex } from './instrucoesNex.mjs';
 import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
@@ -15,6 +7,14 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { SystemMessage, HumanMessage } from '@langchain/core/messages';
+import {
+  limparMensagem,
+  detectarNome,
+  detectarIntencao,
+  temMultiplasPerguntas,
+  personalizarResposta
+} from './utils.mjs';
+import { instrucoesNex } from './instrucoesNex.mjs';
 import { baseConhecimento } from './nexBaseConhecimento.mjs';
 
 const app = express();
@@ -27,15 +27,28 @@ app.use(bodyParser.json());
 let baseConhecimentoTexto = '';
 try {
   baseConhecimentoTexto = fs.readFileSync('./nexBaseConhecimento.mjs', 'utf8');
+  console.log('📄 Base de conhecimento carregada com sucesso.');
 } catch (err) {
-  console.error('Erro ao ler base de conhecimento:', err);
+  console.error('❌ Erro ao ler base de conhecimento:', err);
+  process.exit(1);
 }
 
 // Prepara o vector store
-const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 500, chunkOverlap: 50 });
-const docs = await splitter.createDocuments([baseConhecimentoTexto]);
-const embeddings = new OpenAIEmbeddings();
-const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
+let vectorStore;
+try {
+  console.log('📚 Dividindo base em documentos...');
+  const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 500, chunkOverlap: 50 });
+  const docs = await splitter.createDocuments([baseConhecimentoTexto]);
+
+  console.log('🧠 Gerando embeddings...');
+  const embeddings = new OpenAIEmbeddings();
+  vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
+
+  console.log('✅ Vector store pronto!');
+} catch (err) {
+  console.error('❌ Erro ao preparar Vector Store:', err);
+  process.exit(1);
+}
 
 // Configura o chatbot
 const chat = new ChatOpenAI({ modelName: 'gpt-3.5-turbo', temperature: 0.7 });
@@ -62,7 +75,6 @@ app.post('/ask', async (req, res) => {
   const mensagemOriginal = message;
   const mensagemLimpa = limparMensagem(message);
 
-  // 🔍 NOVO: Interrompe múltiplas perguntas na mesma mensagem
   if (temMultiplasPerguntas(mensagemOriginal)) {
     return res.json({
       reply: 'Você mandou várias coisas juntas. Me diz uma de cada vez pra eu te ajudar melhor, beleza?'
@@ -97,7 +109,6 @@ app.post('/ask', async (req, res) => {
     }
   }
 
-  // Detectar intenção com base atual e contexto anterior
   let intencoes = detectarIntencao(mensagemLimpa, baseConhecimento.intencaoUsuario);
   let respostaComposta = [];
 
@@ -115,12 +126,11 @@ app.post('/ask', async (req, res) => {
 
   if (respostaComposta.length) {
     sessao.ultimaIntencao = intencoes[intencoes.length - 1] || null;
-    const texto = respostaComposta.join('\n\n');
-    sessao.historico.push({ user: mensagemOriginal, bot: texto });
-    return res.json({ reply: personalizarResposta(texto, sessao.nome) }); // 🌟 Aqui!
+    const textoFinal = personalizarResposta(respostaComposta.join('\n\n'), sessao.nome);
+    sessao.historico.push({ user: mensagemOriginal, bot: textoFinal });
+    return res.json({ reply: textoFinal });
   }
 
-  // IA com histórico contextual
   const retriever = vectorStore.asRetriever();
   const docs = await retriever.getRelevantDocuments(mensagemLimpa);
   const contexto = docs.map(d => d.pageContent).join('\n\n');
@@ -155,9 +165,10 @@ app.post('/ask', async (req, res) => {
       'Boa pergunta! IA é a tecnologia por trás da inteligência — tipo eu. Chatbot é a interface que conversa com você. Com IA, ele fica menos burro. 😉';
   }
 
+  texto = personalizarResposta(texto, sessao.nome);
   sessao.ultimaIntencao = intencoes[0] || null;
   sessao.historico.push({ user: mensagemOriginal, bot: texto });
-  return res.json({ reply: personalizarResposta(texto, sessao.nome) }); // 🌟 Aqui também!
+  return res.json({ reply: texto });
 });
 
 app.listen(port, () => console.log(`[NEX] Servidor rodando na porta ${port}`));
