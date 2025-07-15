@@ -1,3 +1,11 @@
+import {
+  limparMensagem,
+  detectarNome,
+  detectarIntencao,
+  temMultiplasPerguntas,
+  personalizarResposta // ⬅️ novo
+} from './utils.mjs';
+import { instrucoesNex } from './instrucoesNex.mjs';
 import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
@@ -7,7 +15,6 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { SystemMessage, HumanMessage } from '@langchain/core/messages';
-import { limparMensagem, detectarNome, detectarIntencao } from './utils.mjs';
 import { baseConhecimento } from './nexBaseConhecimento.mjs';
 
 const app = express();
@@ -33,9 +40,6 @@ const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
 // Configura o chatbot
 const chat = new ChatOpenAI({ modelName: 'gpt-3.5-turbo', temperature: 0.7 });
 
-// Prompt de sistema com a personalidade do Nex
-const instrucoesNex = `... (mantido conforme original)`;
-
 // Gerencia sessões
 const sessoes = new Map();
 
@@ -58,6 +62,13 @@ app.post('/ask', async (req, res) => {
   const mensagemOriginal = message;
   const mensagemLimpa = limparMensagem(message);
 
+  // 🔍 NOVO: Interrompe múltiplas perguntas na mesma mensagem
+  if (temMultiplasPerguntas(mensagemOriginal)) {
+    return res.json({
+      reply: 'Você mandou várias coisas juntas. Me diz uma de cada vez pra eu te ajudar melhor, beleza?'
+    });
+  }
+
   if (!sessao.nome) {
     const nome = detectarNome(mensagemOriginal);
     if (nome) {
@@ -66,58 +77,63 @@ app.post('/ask', async (req, res) => {
     }
     if (!sessao.saudacaoFeita) {
       sessao.saudacaoFeita = true;
-      return res.json({ reply: 'Aí, camarada, antes de nos aprofundarmos, me diz: como posso te chamar aqui no chat?' });
+      return res.json({
+        reply: 'Aí, camarada, antes de nos aprofundarmos, me diz: como posso te chamar aqui no chat?'
+      });
     }
   } else {
     const nomeRepetido = detectarNome(mensagemOriginal);
     if (nomeRepetido && nomeRepetido.toLowerCase() === sessao.nome.toLowerCase()) {
-  return res.json({ reply: `Tamo junto, ${sessao.nome}. Pode mandar ver, tô aqui!` });
-}
+      return res.json({ reply: `Tamo junto, ${sessao.nome}. Pode mandar ver, tô aqui!` });
+    }
 
-if (
-  mensagemLimpa === sessao.nome.toLowerCase() ||
-  mensagemOriginal.trim().toLowerCase() === sessao.nome.toLowerCase()
-) {
-  return res.json({ reply: `Tô ligado que você é o ${sessao.nome}. Me diz o que você quer saber! 😎` });
-}
-
+    if (
+      mensagemLimpa === sessao.nome.toLowerCase() ||
+      mensagemOriginal.trim().toLowerCase() === sessao.nome.toLowerCase()
+    ) {
+      return res.json({
+        reply: `Tô ligado que você é o ${sessao.nome}. Me diz o que você quer saber! 😎`
+      });
+    }
   }
 
   // Detectar intenção com base atual e contexto anterior
   let intencoes = detectarIntencao(mensagemLimpa, baseConhecimento.intencaoUsuario);
   let respostaComposta = [];
 
-  // Se a mensagem for vaga e houver uma intenção anterior, reaproveita
   if (mensagemEhVaga(mensagemLimpa) && sessao.ultimaIntencao) {
     intencoes.push(sessao.ultimaIntencao);
   }
 
-  // Garante que não repita respostas anteriores
- for (const chave of new Set(intencoes)) {
-  const resposta = baseConhecimento.intencaoUsuario[chave]?.resposta;
-  const jaEnviado = sessao.historico.some(h => h.bot.trim() === resposta.trim());
-
-  if (resposta && !jaEnviado) {
-    respostaComposta.push(resposta);
+  for (const chave of new Set(intencoes)) {
+    const resposta = baseConhecimento.intencaoUsuario[chave]?.resposta;
+    const jaEnviado = sessao.historico.some(h => h.bot.trim() === resposta?.trim());
+    if (resposta && !jaEnviado) {
+      respostaComposta.push(resposta);
+    }
   }
-}
-
 
   if (respostaComposta.length) {
     sessao.ultimaIntencao = intencoes[intencoes.length - 1] || null;
     const texto = respostaComposta.join('\n\n');
     sessao.historico.push({ user: mensagemOriginal, bot: texto });
-    return res.json({ reply: texto });
+    return res.json({ reply: personalizarResposta(texto, sessao.nome) }); // 🌟 Aqui!
   }
 
-  // Caso não detecte intenção, segue com embeddings
+  // IA com histórico contextual
   const retriever = vectorStore.asRetriever();
   const docs = await retriever.getRelevantDocuments(mensagemLimpa);
-  const contexto = docs.map(d => d.pageContent).join("\n\n");
+  const contexto = docs.map(d => d.pageContent).join('\n\n');
+
+  const mensagensRecentes = sessao.historico.slice(-3).flatMap(item => [
+    new HumanMessage(item.user),
+    new SystemMessage(item.bot)
+  ]);
 
   const messages = [
     new SystemMessage(instrucoesNex),
     new SystemMessage(`Base de conhecimento:\n${contexto}`),
+    ...mensagensRecentes,
     new HumanMessage(mensagemLimpa)
   ];
 
@@ -126,19 +142,22 @@ if (
     resposta = await chat.call(messages);
   } catch (err) {
     console.error('Erro ao chamar IA:', err);
-    return res.status(500).json({ reply: 'Tô meio bugado agora... tenta de novo mais tarde 😵‍💫' });
+    return res.status(500).json({
+      reply: 'Tô meio bugado agora... tenta de novo mais tarde 😵‍💫'
+    });
   }
 
   let texto = resposta.content.trim();
   const respostasGenéricas = ['não entendi', 'pode repetir', 'tenta em português'];
   const isRespostaGenerica = respostasGenéricas.some(r => texto.toLowerCase().includes(r));
   if (isRespostaGenerica && /\bia\b/i.test(mensagemLimpa) && /chatbot/i.test(mensagemLimpa)) {
-    texto = `Boa pergunta! IA é a tecnologia por trás da inteligência — tipo eu. Chatbot é a interface que conversa com você. Com IA, ele fica menos burro. 😉`;
+    texto =
+      'Boa pergunta! IA é a tecnologia por trás da inteligência — tipo eu. Chatbot é a interface que conversa com você. Com IA, ele fica menos burro. 😉';
   }
 
   sessao.ultimaIntencao = intencoes[0] || null;
   sessao.historico.push({ user: mensagemOriginal, bot: texto });
-  return res.json({ reply: texto });
+  return res.json({ reply: personalizarResposta(texto, sessao.nome) }); // 🌟 Aqui também!
 });
 
 app.listen(port, () => console.log(`[NEX] Servidor rodando na porta ${port}`));

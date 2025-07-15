@@ -60,3 +60,35 @@ export function detectarIntencao(mensagem, intencoes) {
 
   return intencoesDetectadas;
 }
+/**
+ * Detecta se a mensagem contém múltiplas perguntas.
+ * @param {string} texto
+ * @returns {boolean}
+ */
+export function temMultiplasPerguntas(texto) {
+  const perguntas = texto.split(/[?.!]/).filter(p => p.trim().length > 5);
+  return perguntas.length >= 2;
+}
+/**
+ * Aplica estilo debochado e personalizado às respostas.
+ * @param {string} texto - Texto da resposta original.
+ * @param {string|null} nome - Nome do usuário, se houver.
+ * @returns {string} - Texto adaptado.
+ */
+export function personalizarResposta(texto, nome = null) {
+  const frasesExtras = [
+    'Fácil demais pra mim.',
+    'Essa foi tranquila, vai dificultar não?',
+    'Essa aí até minha versão beta respondia.',
+    'Achei que você vinha com algo mais difícil...',
+    'Tô começando a achar que você me subestima 🤨',
+    'Por isso que eu sou o Nex e você... bom, você é você 😏',
+    'Vou deixar essa de presente porque gosto de você.'
+  ];
+
+  const saudacao = nome ? `Olha só, ${nome},` : 'Seguinte,';
+
+  const tempero = frasesExtras[Math.floor(Math.random() * frasesExtras.length)];
+
+  return `${saudacao} ${texto}\n\n${tempero}`;
+}
