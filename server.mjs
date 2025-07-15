@@ -153,6 +153,15 @@ app.post('/ask', async (req, res) => {
 
   let texto = resposta.content.trim();
 
+  
+  // 🟢 REDIRECIONAR FOCO PARA FORMA NEXUS SE ASSUNTO FOR MUITO FORA DO TEMA
+  const temasFora = ['academia', 'dieta', 'suplemento', 'creatina', 'musculação', 'exercício', 'treino', 'fitness', 'nutrição'];
+  const falouDeTemaFora = temasFora.some(t => mensagemLimpa.toLowerCase().includes(t));
+  if (falouDeTemaFora) {
+    texto += '\n\nMas ó… só pra não fugir do foco: aqui na Forma Nexus, a gente cria sites, feeds e até redações personalizadas. Se quiser transformar essa ideia num conteúdo top, fala com o criador aqui: https://wa.me/5511939014504';
+  }
+
+
   // Fallback para IA geral se resposta ruim
   if (respostaEhRuim(texto)) {
     const fallback = await chat.call([
