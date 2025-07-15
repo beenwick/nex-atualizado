@@ -98,11 +98,14 @@ app.post('/ask', async (req, res) => {
 
   // Intenção "orcamento"
   if (intencoes.includes('orcamento')) {
-    const texto = 'O melhor jeito de falarmos sobre valores é no nosso WhatsApp!\n\n👉 https://wa.me/5511939014504';
-    const respostaFinal = personalizarResposta(texto, sessao.nome, true);
+    const texto = 'Os valores variam conforme o projeto, mas o melhor jeito de conseguir um orçamento direto, rápido e certeiro é falando com o criador. Clique abaixo para ir ao nosso WhatsApp:';
+    const respostaFinal = personalizarResposta(texto, sessao.nome, false);
     sessao.historico.push({ user: mensagemOriginal, bot: respostaFinal });
     sessao.ultimaIntencao = 'orcamento';
-    return res.json({ reply: respostaFinal });
+    return res.json({
+      reply: respostaFinal,
+      button: `<a href="https://wa.me/5511939014504" target="_blank">Abrir WhatsApp</a>`
+    });
   }
 
   const respostaComposta = [];
