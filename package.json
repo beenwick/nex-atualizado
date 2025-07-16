@@ -5,9 +5,9 @@
   "main": "server.mjs",
   "type": "module",
   "scripts": {
-    "start": "node server.mjs",
-    "postinstall": "npm install --legacy-peer-deps"
-  },
+  "start": "node server.mjs",
+  "build": "npm install --legacy-peer-deps"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
