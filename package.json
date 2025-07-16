@@ -5,7 +5,8 @@
   "main": "server.mjs",
   "type": "module",
   "scripts": {
-    "start": "node server.mjs"
+    "start": "node server.mjs",
+    "postinstall": "npm install --legacy-peer-deps"
   },
   "keywords": [],
   "author": "",
@@ -19,7 +20,6 @@
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
     "faiss-node": "^0.5.1",
-    "fs": "^0.0.1-security",
     "langchain": "^0.3.30",
     "openai": "^5.9.0",
     "string-similarity": "^4.0.4"
