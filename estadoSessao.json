@@ -133,5 +133,18 @@
         "bot": "O número é (11) 94901-4504."
       }
     ]
+  },
+  "teste-589": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Victor",
+      "email": "jmartiniano@gmail.com"
+    },
+    "historico": [
+      {
+        "user": "vcs fazem site?",
+        "bot": "Claro que fazemos sites! A Forma Nexus tem uma coleção de sites fictícios que vão te deixar de queixo caído. É só dar uma espiadinha no nosso portfólio e ver o que somos capazes de fazer. Design elegante, comunicação afiada e uns efeitos visuais de tirar o fôlego. Pode confiar, a gente não brinca em serviço digital. Vai lá dar uma olhada e se impressionar!"
+      }
+    ]
   }
 }

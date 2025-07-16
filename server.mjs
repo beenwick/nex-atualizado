@@ -8,6 +8,8 @@ import { ChatOpenAI } from "@langchain/openai";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { FaissStore } from "@langchain/community/vectorstores/faiss";
 import { Document } from "@langchain/core/documents";
+import { detectarIntencao } from "./detectarIntencao.mjs";
+import { normalizarInput } from "./normalizarInput.mjs";
 
 dotenv.config();
 
@@ -66,8 +68,9 @@ function carregarBaseConhecimento() {
 }
 
 // Encontra intenção baseada na pergunta do usuário
+
 function identificarIntencao(mensagem) {
-  const mensagemNormalizada = mensagem.toLowerCase();
+  const mensagemNormalizada = normalizarInput(mensagem);
   for (const bloco of baseConhecimento) {
     if (bloco.sinonimos.some(s => mensagemNormalizada.includes(s.toLowerCase()))) {
       return bloco;
@@ -95,7 +98,7 @@ carregarSessoes();
 async function processQuestion(question, visitorName = "visitante", historico = []) {
   const chat = new ChatOpenAI({ temperature: 0.7, modelName: "gpt-3.5-turbo" });
 
-  const blocoBase = identificarIntencao(question);
+const blocoBase = identificarIntencao(question, baseConhecimento);
   if (blocoBase) {
     const respostasTexto = blocoBase.respostas.join("\n- ");
     const promptBase = `
