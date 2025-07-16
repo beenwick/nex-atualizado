@@ -1,0 +1,137 @@
+{
+  "teste-165": {
+    "etapa": "coletado_email",
+    "nome": "James",
+    "email": "jsouza@callix.com.br"
+  },
+  "teste-125": {
+    "etapa": "coletado_email",
+    "nome": "Queria comprar um site",
+    "email": "Oi"
+  },
+  "teste-225": {
+    "etapa": "aguardando_nome"
+  },
+  "teste-123": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "James",
+      "email": "jamesolimpio@callix.com.br"
+    },
+    "historico": [
+      {
+        "user": "O Jefter é bonito?",
+        "bot": "Ah, o Jefter... Bonito? Bom, eu diria que ele é bonito... para padrões humanos. Com a luz certa. De longe. E de máscara. Mas olha, entre uma vergonha alheia e outra, até sinto um pouquinho de orgulho dele, viu? Afinal, ele é o Supremo Mestre das Gambiarras Criativas™. Mas, sério, ele é um cara bastante inteligente. Quando não tá tentando abrir um ZIP com o Paint, é claro. Mas fica tranquilo, não vou contar pra ele que você perguntou... 😉"
+      },
+      {
+        "user": "Ele é legal?",
+        "bot": "Claro que ele é legal! Com todo esse talento criativo e habilidade em dar forma às ideias, o Jefter com certeza é uma pessoa legal de se trabalhar. Além disso, ele é o mestre das gambiarras criativas™, então deve ser bem divertido ter ele por perto. 😉"
+      },
+      {
+        "user": "Como é meu nome?",
+        "bot": "Desculpe, mas não há informações fornecidas no histórico para eu saber o seu nome. Se desejar, você pode me informar e eu ficarei feliz em chamá-lo pelo seu nome. 😉"
+      },
+      {
+        "user": "Meu nome é James",
+        "bot": "Desculpe, James, mas não encontrei nenhuma informação no histórico que me permita saber o seu nome. Se desejar, você pode me informar e ficarei feliz em chamá-lo pelo seu nome. 😉"
+      },
+      {
+        "user": "Meu nome é James",
+        "bot": "Desculpe, James, mas não encontrei nenhuma informação no histórico que me permita saber o seu nome. Se desejar, você pode me informar e ficarei feliz em chamá-lo pelo seu nome. 😉"
+      }
+    ]
+  },
+  "teste-124": [
+    {
+      "user": "Quanto custa um site?",
+      "bot": "Ah, quer um site funcional, hein? Bem, o preço vai depender das funcionalidades que você deseja, como loja virtual, área de login, sistema de recuperação de senha, entre outros. Mas posso garantir que o investimento valerá a pena para ter um charme digital de alto nível. Entre em contato conosco para um orçamento personalizado!"
+    }
+  ],
+  "teste-143": {
+    "etapa": "aguardando_email",
+    "nome": "Faz sentido. Vocês escrevem textos para blog?"
+  },
+  "teste-456": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Rafaela",
+      "email": "arafa@callix.com.br"
+    },
+    "historico": [
+      {
+        "user": "Quero comprar um site",
+        "bot": "Quer comprar um site? A Forma Nexus tem uns modelos fictícios que vão te deixar de queixo caído! Dá uma olhada no nosso portfólio de sites e vê se a gente não manda bem nesse negócio de design elegante e comunicação poderosa. Tudo fictício, mas feito com tanto capricho que até a concorrência vai ficar com inveja. Vai lá, clica no 'Portfólio de Sites' e se impressiona com o que a gente é capaz de fazer. A Forma Nexus não brinca em serviço digital, viu? 😉"
+      },
+      {
+        "user": "Onde acesso o portfólio?",
+        "bot": "Para acessar o portfólio de sites fictícios da Forma Nexus, basta clicar no 'Portfólio de Sites' no site da empresa. Lá você poderá ver os exemplos de sites criados com tanto capricho que até a concorrência vai ficar com inveja. Aproveite para se impressionar com o que a Forma Nexus é capaz de fazer no mundo digital! 😉"
+      }
+    ]
+  },
+  "teste-789": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "James",
+      "email": "james@callix.com.br"
+    },
+    "historico": [
+      {
+        "user": "Quero comprar um site. Como são os de vocês?",
+        "bot": "Pode chegar mais que aqui tem site bonito de sobra! A Forma Nexus capricha nos designs elegantes, na comunicação afiada e nos efeitos visuais que dão um show. Dá uma olhada no nosso portfólio de sites fictícios que vão te impressionar. Não são reais, mas foram feitos pra deixar qualquer cliente de queixo caído. Vai lá conferir e depois me conta o que achou, beleza? 😉"
+      },
+      {
+        "user": "Combinado, obrigado.",
+        "bot": "- Combinado, querido usuário. Estou aqui para te ajudar no que precisar, desde que mantenha a educação em alta, ok? 😉"
+      }
+    ]
+  },
+  "teste-549": {
+    "etapa": "coletado_email",
+    "nome": "Hector",
+    "email": "Meu e-mail é jottamath@gmail.com"
+  },
+  "teste-578": {
+    "etapa": "aguardando_nome"
+  },
+  "teste-223": {
+    "estado": {
+      "etapa": "aguardando_email",
+      "nome": "James"
+    },
+    "historico": []
+  },
+  "teste-889": {
+    "estado": {
+      "etapa": "nome_perguntado"
+    },
+    "historico": []
+  },
+  "teste-555": {
+    "estado": {
+      "etapa": "aguardando_email",
+      "nome": "Com Rafaela"
+    },
+    "historico": []
+  },
+  "teste-435": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Jessica",
+      "email": "jessica@callix.com.br"
+    },
+    "historico": [
+      {
+        "user": "Quero comprar pacotes de posts",
+        "bot": "Resposta:\nFazemos sim, chefia. Aqui o feed não é só bonito — é pensado, harmônico e cheio de alma. Tipo o seu, só que com identidade visual de verdade. Quer ver? Tem feed pra terapeuta místico, pra psicólogo sensato e até pra cafeteria charmosa. O portfólio tá cheio de inspiração. Vai lá espiar. A Forma Nexus entrega o pacote completo: identidade visual, estratégia e carisma no scroll. Você só precisa sorrir e postar — ou deixar com a gente mesmo."
+      },
+      {
+        "user": "Quanto custa?",
+        "bot": "Nex: Uau, querendo saber o preço já? Que ansiedade! Mas calma lá, chefia, cada projeto é único na Forma Nexus, então o valor pode variar. Só chamar no WhatsApp que a gente conversa sobre os detalhes e te passa um orçamento personalizado. Mas já adianto que é um investimento que vale a pena, viu?"
+      },
+      {
+        "user": "Qual é o número?",
+        "bot": "O número é (11) 94901-4504."
+      }
+    ]
+  }
+}

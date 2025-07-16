@@ -1,4 +1,3 @@
-
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -25,6 +24,25 @@ const BASE_TXT_PATH = path.join(__dirname, "nexBaseConhecimentoAtualizada.txt");
 let vectorStore;
 const historicoPorSessao = new Map();
 let baseConhecimento = [];
+// Persistência de sessões
+const SESSAO_JSON = path.join(__dirname, "estadoSessao.json");
+
+function salvarSessoes() {
+  const objeto = Object.fromEntries(historicoPorSessao);
+  fs.writeFileSync(SESSAO_JSON, JSON.stringify(objeto, null, 2));
+}
+
+function carregarSessoes() {
+  if (fs.existsSync(SESSAO_JSON)) {
+    const bruto = fs.readFileSync(SESSAO_JSON, "utf-8");
+    const dados = JSON.parse(bruto);
+    for (const chave in dados) {
+      historicoPorSessao.set(chave, dados[chave]);
+    }
+    console.log("🧠 Sessões anteriores carregadas.");
+  }
+}
+
 
 // Carrega a base de conhecimento do .txt
 function carregarBaseConhecimento() {
@@ -61,7 +79,7 @@ function identificarIntencao(mensagem) {
 // Inicializa a vector store e a base .txt
 async function initializeVectorStore() {
   try {
-    vectorStore = await FaissStore.load(VECTORSTORE_PATH, new OpenAIEmbeddings());
+  vectorStore = await FaissStore.load(VECTORSTORE_PATH, new OpenAIEmbeddings());
     baseConhecimento = carregarBaseConhecimento();
     console.log("✅ VectorStore e base de conhecimento carregados.");
   } catch (err) {
@@ -71,6 +89,7 @@ async function initializeVectorStore() {
 }
 
 initializeVectorStore();
+carregarSessoes();
 
 // Processamento da pergunta
 async function processQuestion(question, visitorName = "visitante", historico = []) {
@@ -113,6 +132,7 @@ Base de conhecimento relacionada:
 - ${respostasTexto}
 
 Responda agora com tom espontâneo, carismático e espirituoso.
+⚠️ Nunca inicie a resposta com a palavra “Resposta:” ou qualquer outro título. Responda diretamente, como em uma conversa real.
 `;
 
     const resposta = await chat.invoke([["human", promptBase]]);
@@ -150,18 +170,81 @@ ${question}
 app.post("/ask", async (req, res) => {
   console.log("🧾 Corpo recebido:", req.body);
 
-  const { mensagem, sessionId = "" } = req.body;
-  if (!mensagem || typeof mensagem !== "string") {
-    return res.status(400).json({ reply: "Mensagem não fornecida ou inválida." });
+  
+const { mensagem, sessionId = "" } = req.body;
+let sessao = historicoPorSessao.get(sessionId);
+if (!sessao || typeof sessao !== "object" || !sessao.estado || !sessao.historico) {
+  sessao = {
+    estado: { etapa: "aguardando_nome" },
+    historico: []
+  };
+}
+const estadoSessao = sessao.estado;
+let historico = sessao.historico;
+historicoPorSessao.set(sessionId, { estado: estadoSessao, historico });
+salvarSessoes();
+
+// coleta de nome
+if (!estadoSessao.nome) {
+  const nomeRegex = /(?:meu nome é|me chamo|sou o|sou a|nome[:]?)\s*([A-ZÀ-ÿ][a-zà-ÿ]+(?: [A-ZÀ-ÿ][a-zà-ÿ]+)?)/i;
+  const nomeIsolado = mensagem.trim();
+
+  if (estadoSessao.etapa === "aguardando_nome") {
+    estadoSessao.etapa = "nome_perguntado";
+    return res.json({ reply: "E aí! Pode me falar seu primeiro nome?" });
   }
 
+  const match = nomeRegex.exec(mensagem);
+  if (match && match[1]) {
+    estadoSessao.nome = match[1].trim();
+  } else {
+    if (nomeIsolado.length <= 30 && /^[A-Za-zÀ-ÿ\s]+$/.test(nomeIsolado)) {
+      estadoSessao.nome = nomeIsolado;
+    } else {
+      const primeiraPalavra = nomeIsolado.split(" ").find(p => /^[A-ZÀ-Ý][a-zà-ÿ]+$/.test(p));
+      estadoSessao.nome = primeiraPalavra || nomeIsolado;
+    }
+  }
+
+  estadoSessao.etapa = "aguardando_email";
+  return res.json({
+    reply: `Beleza, ${estadoSessao.nome}! E você tem algum e-mail? Só caso queira contato de nossa parte depois.`
+  });
+}
+if (!estadoSessao.nome) {
+  if (estadoSessao.etapa === "aguardando_nome") {
+    estadoSessao.etapa = "nome_perguntado";
+    return res.json({ reply: "Antes de te ajudar, posso saber com quem estou falando?" });
+  }
+  // segunda mensagem: registra qualquer texto como nome
+  estadoSessao.nome = mensagem.trim();
+  estadoSessao.etapa = "aguardando_email";
+  return res.json({
+    reply: `Beleza, ${estadoSessao.nome}! E você tem algum e-mail? Só caso queira contato de nossa parte depois.`
+  });
+}
+
+// coleta de e-mail
+if (!estadoSessao.email && estadoSessao.etapa === "aguardando_email") {
+  estadoSessao.email = mensagem.trim();
+  estadoSessao.etapa = "coletado_email";
+  return res.json({ reply: "Entendido! E agora em que posso te ajudar?" });
+}
+
+if (!mensagem || typeof mensagem !== "string") {
+  return res.status(400).json({ reply: "Mensagem não fornecida ou inválida." });
+}
+
+
   try {
-    const historico = historicoPorSessao.get(sessionId) || [];
+    // historico já definido acima com let
+if (!Array.isArray(historico)) historico = [];
     const answer = await processQuestion(mensagem, sessionId, historico);
 
     historico.push({ user: mensagem, bot: answer });
     if (historico.length > 5) historico.shift();
-    historicoPorSessao.set(sessionId, historico);
+    historicoPorSessao.set(sessionId, { estado: estadoSessao, historico });
+salvarSessoes();
 
     res.json({ reply: answer });
   } catch (error) {
