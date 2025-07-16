@@ -1,3 +1,4 @@
+
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -40,11 +41,9 @@ initializeVectorStore();
 async function processQuestion(question, visitorName = "visitante") {
   if (!vectorStore) throw new Error("VectorStore not initialized");
 
-  // Retrieve top 5 relevant docs
   const docs = await vectorStore.similaritySearch(question, 5);
   const context = docs.map(doc => doc.pageContent).join("\n\n");
 
-  // Call OpenAI with context
   const chat = new ChatOpenAI({ temperature: 0.7, modelName: "gpt-3.5-turbo" });
 
   const prompt = `
@@ -64,14 +63,19 @@ ${question}
 
 // Endpoint uses pre-loaded vector store
 app.post("/ask", async (req, res) => {
-  const { pergunta, nome } = req.body;
-  if (!pergunta) return res.status(400).json({ error: "Pergunta não fornecida" });
+  console.log("🧾 Corpo recebido:", req.body);
+
+  const { mensagem, historico = [], sessionId = "" } = req.body;
+  if (!mensagem || typeof mensagem !== "string") {
+    return res.status(400).json({ reply: "Mensagem não fornecida ou inválida." });
+  }
+
   try {
-    const answer = await processQuestion(pergunta, nome);
-    res.json({ resposta: answer });
+    const answer = await processQuestion(mensagem, sessionId);
+    res.json({ reply: answer });
   } catch (error) {
-    console.error("Error processing question:", error);
-    res.status(500).json({ error: "Erro interno ao responder." });
+    console.error("❌ Erro ao responder:", error);
+    res.status(500).json({ reply: "Erro interno ao processar a resposta." });
   }
 });
 
