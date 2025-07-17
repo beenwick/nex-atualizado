@@ -15,7 +15,12 @@ dotenv.config();
 import { enviarParaTelegram } from "./enviarTelegram.mjs";
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: ["https://formanexus.com.br", "https://www.formanexus.com.br", "http://localhost:3000"],
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"],
+  credentials: true
+}));
 app.use(express.json());
 
 const __filename = fileURLToPath(import.meta.url);
