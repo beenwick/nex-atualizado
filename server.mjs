@@ -12,6 +12,7 @@ import { detectarIntencao } from "./detectarIntencao.mjs";
 import { normalizarInput } from "./normalizarInput.mjs";
 
 dotenv.config();
+import { enviarParaTelegram } from "./enviarTelegram.mjs";
 
 const app = express();
 app.use(cors());
@@ -243,6 +244,7 @@ if (!mensagem || typeof mensagem !== "string") {
     // historico já definido acima com let
 if (!Array.isArray(historico)) historico = [];
     const answer = await processQuestion(mensagem, sessionId, historico);
+    await enviarParaTelegram(estadoSessao.nome, mensagem, answer);
 
     historico.push({ user: mensagem, bot: answer });
     if (historico.length > 5) historico.shift();
