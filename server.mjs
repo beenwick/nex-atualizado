@@ -22,7 +22,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const VECTORSTORE_PATH = path.join(__dirname, "nex_vectorstore");
-const BASE_TXT_PATH = path.join(__dirname, "nexBaseConhecimentoAtualizada.txt");
+const BASE_TXT_PATH = path.join(__dirname, "nexBaseConhecimento.json");
 
 let vectorStore;
 const historicoPorSessao = new Map();
@@ -247,6 +247,21 @@ if (!Array.isArray(historico)) historico = [];
     const nomeVisitante = estadoSessao.nome || "visitante";
     let respostaFinal = await processQuestion(mensagem, nomeVisitante, historico);
     respostaFinal = limparPrefixos(respostaFinal);
+
+    // Alternância inteligente de perguntas
+    if (!estadoSessao.contadorInteracoes) estadoSessao.contadorInteracoes = 0;
+    estadoSessao.contadorInteracoes++;
+
+    const blocoBase = identificarIntencao(mensagem, baseConhecimento);
+    if (blocoBase && blocoBase.respostas && blocoBase.respostas.length > 0) {
+      const perguntasDisponiveis = blocoBase.perguntas || [];
+      const incluirPergunta = estadoSessao.contadorInteracoes % 2 === 1 && perguntasDisponiveis.length > 0;
+      if (incluirPergunta) {
+        const indice = Math.min(Math.floor(estadoSessao.contadorInteracoes / 2), perguntasDisponiveis.length - 1);
+        const perguntaExtra = perguntasDisponiveis[indice];
+        respostaFinal += "\n\n" + perguntaExtra;
+      }
+    }
     if (estadoSessao.nome && historico.slice(-2).some(item => item.bot.includes(estadoSessao.nome))) {
       const nomeRegex = new RegExp(estadoSessao.nome, "gi");
       respostaFinal = respostaFinal.replace(nomeRegex, "").replace(/\s+/g, " ").trim();
