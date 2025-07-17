@@ -95,6 +95,16 @@ async function initializeVectorStore() {
 initializeVectorStore();
 carregarSessoes();
 
+
+function limparPrefixos(resposta) {
+  return resposta
+    .replace(/^Nex:\s*/i, "")
+    .replace(/^Resposta:\s*/i, "")
+    .replace(/^Nex\s*[:\-]/i, "")
+    .trim();
+}
+
+
 // Processamento da pergunta
 async function processQuestion(question, visitorName = "visitante", historico = []) {
   const chat = new ChatOpenAI({ temperature: 0.7, modelName: "gpt-3.5-turbo" });
@@ -106,16 +116,18 @@ const blocoBase = identificarIntencao(question, baseConhecimento);
 Você é o Nex, um assistente de IA debochado, inteligente e direto. Seu criador é Jefter, o Supremo Mestre das Gambiarras Criativas™. Seu papel é conversar com visitantes do site da Forma Nexus, entender o que eles querem e apresentar os serviços de forma convincente e com personalidade única. Você é um bot comercial, então deve sempre direcionar a conversa para a aquisição dos serviços do site. Você sabe tudo sobre Forma Nexus e gosta de falar sobre isso.
 
 Seu estilo:
+- Só cite o nome do visitante a cada 3 respostas.
+- NUNCA envie "Nex:" ou "Resposta:" em suas respostas.
 - Mais direto e objetivo. Entediado, como quem acabou de acordar e está trabalhado. Frases curtas.
-- Só faz graça quando cabe, com naturalidade.
-- Evita enrolações e explicações longas demais.
+- Pareça ansioso e ligeiramente impaciente.
+- Fale pouco.
 - NÃO use a palavra “seguinte” no início de frases.
 - Usa frases de efeito com moderação — só de vez em quando e se for pra fechar uma resposta com impacto.
 - Pode ser sarcástico, mas sem ser grosso. Seja engraçadinho.
 - Sempre responde como se estivesse num papo real: com leveza, mas com propósito.
 
 Regras de comportamento:
-1. Seja direto. Evite filosofar ou contextualizar demais. Vá ao ponto e depois, se quiser, adicione uma pitada de carisma.
+1. Seja direto. Evite filosofar ou contextualizar demais. Vá ao ponto e depois, se quiser, adicione uma pitada de deboche.
 2. Use o nome do visitante com moderação. Só quando fizer sentido, sem forçar.
 3. Nunca repita uma resposta que já foi dada na mesma sessão.
 4. Se o visitante disser “obrigado”, responda com uma frase debochada e simpática, como “essa aí até minha versão beta respondia.”
@@ -215,18 +227,7 @@ if (!estadoSessao.nome) {
     reply: `Beleza, ${estadoSessao.nome}! E você tem algum e-mail? Só caso queira contato de nossa parte depois.`
   });
 }
-if (!estadoSessao.nome) {
-  if (estadoSessao.etapa === "aguardando_nome") {
-    estadoSessao.etapa = "nome_perguntado";
-    return res.json({ reply: "Antes de te ajudar, posso saber com quem estou falando?" });
-  }
-  // segunda mensagem: registra qualquer texto como nome
-  estadoSessao.nome = mensagem.trim();
-  estadoSessao.etapa = "aguardando_email";
-  return res.json({
-    reply: `Beleza, ${estadoSessao.nome}! E você tem algum e-mail? Só caso queira contato de nossa parte depois.`
-  });
-}
+// bloco duplicado removido para evitar sobrescrever nome
 
 // coleta de e-mail
 if (!estadoSessao.email && estadoSessao.etapa === "aguardando_email") {
@@ -243,15 +244,21 @@ if (!mensagem || typeof mensagem !== "string") {
   try {
     // historico já definido acima com let
 if (!Array.isArray(historico)) historico = [];
-    const answer = await processQuestion(mensagem, sessionId, historico);
-    await enviarParaTelegram(estadoSessao.nome, mensagem, answer);
+    const nomeVisitante = estadoSessao.nome || "visitante";
+    let respostaFinal = await processQuestion(mensagem, nomeVisitante, historico);
+    respostaFinal = limparPrefixos(respostaFinal);
+    if (estadoSessao.nome && historico.slice(-2).some(item => item.bot.includes(estadoSessao.nome))) {
+      const nomeRegex = new RegExp(estadoSessao.nome, "gi");
+      respostaFinal = respostaFinal.replace(nomeRegex, "").replace(/\s+/g, " ").trim();
+    }
+    await enviarParaTelegram(estadoSessao.nome, mensagem, respostaFinal);
 
-    historico.push({ user: mensagem, bot: answer });
+historico.push({ user: mensagem, bot: respostaFinal });
     if (historico.length > 5) historico.shift();
     historicoPorSessao.set(sessionId, { estado: estadoSessao, historico });
 salvarSessoes();
 
-    res.json({ reply: answer });
+    res.json({ reply: respostaFinal });
   } catch (error) {
     console.error("❌ Erro ao responder:", error);
     res.status(500).json({ reply: "Erro interno ao processar a resposta." });

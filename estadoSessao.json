@@ -144,6 +144,98 @@
       {
         "user": "vcs fazem site?",
         "bot": "Claro que fazemos sites! A Forma Nexus tem uma coleção de sites fictícios que vão te deixar de queixo caído. É só dar uma espiadinha no nosso portfólio e ver o que somos capazes de fazer. Design elegante, comunicação afiada e uns efeitos visuais de tirar o fôlego. Pode confiar, a gente não brinca em serviço digital. Vai lá dar uma olhada e se impressionar!"
+      },
+      {
+        "user": "vcs fazem site?",
+        "bot": "Claro que fazemos sites! A Forma Nexus tem uma página cheia de sites fictícios pra você conferir e babar no design. É tudo fictício, mas feito com tanto capricho que dá até pra enganar a concorrência. Entra lá no 'Portfólio de Sites' e se impressiona com o que a gente é capaz de fazer. Afinal, a Forma Nexus não brinca em serviço digital, né? 😉"
+      }
+    ]
+  },
+  "inho-123": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Theus",
+      "email": "Theusthat@gmail.com"
+    },
+    "historico": [
+      {
+        "user": "Quero comprar um site para minha marca",
+        "bot": "Ah, quer investir na sua marca, hein? Que chique! A Forma Nexus tem uns sites fictícios maravilhosos pra te mostrar. É tipo um desfile de moda, mas de páginas online. Entra lá no 'Portfólio de Sites' e se prepara pra ficar de queixo caído. A gente arrasa tanto que até a concorrência fica de olho. Vai lá conferir e se apaixonar pelos nossos trabalhos fictícios, mas cheios de estilo! 😉"
+      },
+      {
+        "user": "Fica pronto em quanto tempo?",
+        "bot": "Ah, meu caro inho-123, a Forma Nexus entrega o kit completo de presença digital com rapidez e qualidade. Mas preciso de mais informações para te dar um prazo específico. Se você me chamar no WhatsApp, podemos discutir os detalhes e ver qual é a melhor solução para o seu projeto. Vamos lá, não perca tempo! 😉"
+      }
+    ]
+  },
+  "inho-124": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Vector",
+      "email": "Vector@gmail.com"
+    },
+    "historico": [
+      {
+        "user": "Quanto custa?",
+        "bot": "Nex: Ah, meu caro Vector, o custo vai depender do tipo de serviço que você deseja na Forma Nexus. Como somos especialistas em entregas personalizadas, é melhor você entrar em contato conosco para que possamos entender suas necessidades e te passar um orçamento adequado. Mas pode ficar tranquilo, pois aqui na Forma Nexus prezamos pela qualidade e transparência nos preços. Então, não se preocupe, estamos aqui para te ajudar a brilhar sem pesar no bolso."
+      },
+      {
+        "user": "Lembra meu nome?",
+        "bot": "Claro que lembro, Vector! Afinal, como poderia esquecer de um nome tão marcante? Como posso te ajudar hoje?"
+      },
+      {
+        "user": "E ae!",
+        "bot": "E ae, Vector! Como posso te ajudar hoje? Está pronto para brilhar com a Forma Nexus e transformar sua presença digital em algo verdadeiramente especial?"
+      },
+      {
+        "user": "Estou sim. Vocês escrevem conteúdo em texto?",
+        "bot": "Resposta:\nClaro que sim, Vector! Escrever é comigo mesmo. Na Forma Nexus entregamos texto com alma, punch e pontuação certinha. Seja do institucional ao TikTok, estamos aqui para entregar conteúdo com propósito e um toquezinho de vaidade criativa. Pode contar com a gente para criar desde artigos até legendas, estamos prontos para fazer barulho bonito na internet. Então, o que você precisa?"
+      },
+      {
+        "user": "Quanto custa uma redação?",
+        "bot": "Nex: Ah, meu caro Vector, o custo de uma redação vai depender do tipo de serviço que você deseja na Forma Nexus. Como somos especialistas em entregas personalizadas, é melhor você entrar em contato conosco para que possamos entender suas necessidades e te passar um orçamento adequado. Mas pode ficar tranquilo, pois aqui na Forma Nexus prezamos pela qualidade e transparência nos preços. Então, não se preocupe, estamos aqui para te ajudar a brilhar sem pesar no bolso."
+      }
+    ]
+  },
+  "inho-125": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Matheus",
+      "email": "Matheus@gmail.com"
+    },
+    "historico": [
+      {
+        "user": "Quanto custa 24 posts para instagram?",
+        "bot": "Ah, querido Matheus, o preço dos 24 posts para Instagram vai depender do pacote que você escolher na Forma Nexus. Recomendo entrar em contato diretamente com eles para obter um orçamento personalizado. Mas lembre-se, qualidade tem um preço!"
+      },
+      {
+        "user": "E fica pronto em quanto tempo?",
+        "bot": "Nex: Ah, Matheus, essa é uma pergunta que depende de diversos fatores, como a complexidade dos posts, a quantidade de revisões necessárias e a disponibilidade da equipe da Forma Nexus. Recomendo entrar em contato diretamente com eles para obter uma estimativa de prazo. Mas já adianto que qualidade leva tempo, então paciência é uma virtude!"
+      }
+    ]
+  },
+  "inho-126": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Vector",
+      "email": "Vecto@gmai@gmail.com"
+    },
+    "historico": []
+  },
+  "inho-127": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Julia",
+      "email": "Jubs@blueballs.com"
+    },
+    "historico": [
+      {
+        "user": "Quanto custa 24 posts para instagram?",
+        "bot": "Ah, querida Julia, se você está interessada em adquirir 24 posts para o Instagram, sugiro que entre em contato diretamente com a Forma Nexus para obter um orçamento personalizado. Afinal, cada pacote e serviço pode ter um valor diferente. Não posso te dar uma resposta exata, mas posso garantir que o resultado será digno de um feed de dar inveja! 😉📸 #CharmeDigital"
+      },
+      {
+        "user": "E como entro em contato diretamente?",
+        "bot": "Ah, querida , se você está querendo falar diretamente com a Forma Nexus, você pode entrar em contato através do WhatsApp do criador supremo Jefter, no número (11) 94901-4504. Ele está sempre disponível para trocar uma ideia sobre projetos e novas propostas. Se preferir, também pode enviar um e-mail para contato@formanexus.com. Ou, se estiver se sentindo mais tímida, pode mandar uma mensagem no Instagram da Forma Nexus, @formanexus. Opções não faltam, é só escolher a que mais se encaixa no seu estilo de comunicação! 😉📱 #ComunicaçãoDireta"
       }
     ]
   }
