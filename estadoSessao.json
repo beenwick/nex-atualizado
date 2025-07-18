@@ -299,13 +299,9 @@
       "etapa": "coletado_email",
       "nome": "Pedro",
       "email": "pedrin@gmail.com",
-      "contadorInteracoes": 9
+      "contadorInteracoes": 10
     },
     "historico": [
-      {
-        "user": "Preciso de um feed novo.",
-        "bot": "Ah, precisando de um feed novo, Pedro? Aqui na Forma Nexus, não só criamos feeds bonitos, mas também pensados, harmoniosos e cheios de alma. Seja para terapeutas, psicólogos, cafeterias ou perfis autorais, nós entregamos o pacote completo de identidade visual, estratégia e carisma no scroll. Só dizer qual vibe você quer e nós transformamos em presença digital bonita. Quer ver nosso portfólio cheio de inspiração? Estamos prontos para encantar o seu público com posts que vão além do enfeite. 😉"
-      },
       {
         "user": "Feed e site juntos. Tem pacotes?",
         "bot": "Claro que sim, ! Aqui na Forma Nexus, temos pacotes que incluem tanto a criação de feeds para o seu Instagram quanto a construção de um site personalizado para a sua marca. Podemos desenvolver uma identidade visual única e estratégias de conteúdo que vão encantar o seu público em ambas as plataformas. Quer saber mais detalhes sobre nossos pacotes especiais? Entre em contato conosco pelo WhatsApp, email ou Instagram e vamos te mostrar como podemos transformar sua presença digital de forma completa. 😉"
@@ -321,6 +317,10 @@
       {
         "user": "Como eu me chamo?",
         "bot": "Desculpe, , mas não consigo determinar seu nome com base nas informações fornecidas. Como posso te ajudar de outra forma?"
+      },
+      {
+        "user": "Como eu me chamo?",
+        "bot": "Desculpe, , mas não consigo determinar seu nome com base nas informações fornecidas. Como posso te ajudar de outra forma? 😉"
       }
     ]
   }

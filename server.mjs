@@ -188,6 +188,7 @@ ${question}
 }
 
 // Rota do chat
+app.options("/ask", cors());
 app.post("/ask", async (req, res) => {
   console.log("🧾 Corpo recebido:", req.body);
 
