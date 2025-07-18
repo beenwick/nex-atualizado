@@ -299,13 +299,9 @@
       "etapa": "coletado_email",
       "nome": "Pedro",
       "email": "pedrin@gmail.com",
-      "contadorInteracoes": 8
+      "contadorInteracoes": 9
     },
     "historico": [
-      {
-        "user": "Vocês também fazem feeds?",
-        "bot": "Claro que fazemos. Feed alinhado com nicho, tom de voz certo e arte bonita. Aqui é post com propósito, não só firula. Tem post pra pet shop, clínica estética, terapeuta, espiritualista e até pra quem ainda tá descobrindo o que vende. A gente resolve. Você manda o nicho, a gente entrega o feed. Textos bons, visuais bonitos e estratégia embutida. É post de verdade, não enfeite."
-      },
       {
         "user": "Preciso de um feed novo.",
         "bot": "Ah, precisando de um feed novo, Pedro? Aqui na Forma Nexus, não só criamos feeds bonitos, mas também pensados, harmoniosos e cheios de alma. Seja para terapeutas, psicólogos, cafeterias ou perfis autorais, nós entregamos o pacote completo de identidade visual, estratégia e carisma no scroll. Só dizer qual vibe você quer e nós transformamos em presença digital bonita. Quer ver nosso portfólio cheio de inspiração? Estamos prontos para encantar o seu público com posts que vão além do enfeite. 😉"
@@ -321,6 +317,10 @@
       {
         "user": "Como eu me chamo?",
         "bot": "Desculpe, Pedro, mas não consigo determinar seu nome com base nas informações fornecidas. Como posso te ajudar de outra forma?"
+      },
+      {
+        "user": "Como eu me chamo?",
+        "bot": "Desculpe, , mas não consigo determinar seu nome com base nas informações fornecidas. Como posso te ajudar de outra forma?"
       }
     ]
   }
