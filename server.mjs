@@ -206,6 +206,87 @@ let historico = sessao.historico;
 historicoPorSessao.set(sessionId, { estado: estadoSessao, historico });
 salvarSessoes();
 
+
+function gerarPerguntasColeta(respostaServico) {
+  const tipo = respostaServico.toLowerCase();
+
+  if (tipo.includes("site")) {
+    return [
+      "Show! Vai ser institucional, portfólio ou loja virtual?",
+      "Já tem identidade visual ou vai deixar essa missão pra mim?",
+      "Quantas páginas você imagina?",
+      "Prefere um tom mais sério, moderno ou malemolente como eu?",
+      "É pra marca pessoal, empresa ou outro rolê?"
+    ];
+  }
+
+  if (/(post|posts|feed|feeds)/.test(tipo)) {
+    return [
+      "Beleza! Já tem identidade visual ou tá tudo por minha conta?",
+      "Vai querer carrossel, reels, stories ou tudo junto?",
+      "Quantas postagens você precisa?",
+      "Prefere um estilo mais clean, coloridão ou zoeiro?",
+      "O conteúdo é pra empresa, perfil pessoal ou outro tipo de página?"
+    ];
+  }
+
+  if (
+    tipo.includes("texto") ||
+    tipo.includes("copy") ||
+    tipo.includes("redação") ||
+    tipo.includes("artigo") ||
+    tipo.includes("blog") ||
+    tipo.includes("acadêmico")
+  ) {
+    return [
+      "Fechou! Esse texto é pra onde? Site, blog, trabalho acadêmico ou outro rolê?",
+      "Já tem algum rascunho, referência ou quer que eu comece do zero sideral?",
+      "Quantas palavras ou páginas você imagina?",
+      "Quer um tom mais formal, explicativo ou algo mais descolado e fluido?",
+      "É pra empresa, faculdade, projeto pessoal... ou missão alienígena?"
+    ];
+  }
+
+  if (
+    tipo.includes("pacote") ||
+    tipo.includes("posts") ||
+    tipo.includes("postagens") ||
+    tipo.includes("combo")
+  ) {
+    return [
+      "Beleza! Vai querer combo de quantos posts? Tipo 3, 6, 9...?",
+      "Já tem identidade visual ou deixo o feed lindão do meu jeito mesmo?",
+      "Prefere foco em carrossel, reels, stories ou tudo junto e batendo palma?",
+      "O conteúdo é informativo, promocional ou mais estético/aspiracional?",
+      "Pra empresa, marca pessoal ou perfil que quer virar tendência?"
+    ];
+  }
+
+  if (
+    tipo.includes("roteiro") ||
+    tipo.includes("vídeo") ||
+    tipo.includes("tiktok") ||
+    tipo.includes("reels") ||
+    tipo.includes("shorts")
+  ) {
+    return [
+      "Top! O vídeo vai ser estilo explicação, trend, humor ou storytelling cósmico?",
+      "Quantos roteiros você precisa? Só um ou já quer pacote intergaláctico?",
+      "Tem referência ou quer que eu crie a ideia do zero absoluto?",
+      "Qual o tom: didático, misterioso, divertido ou debochado tipo eu?",
+      "É pra qual nicho ou público? Isso me ajuda a calibrar a nave."
+    ];
+  }
+
+  return [
+    "Demorô! Tem identidade visual ou quer que eu crie?",
+    "Qual o volume total do projeto? Tipo número de páginas ou textos.",
+    "Estilo mais sério, divertido ou espiritualizado?",
+    "É pra quem? Uma empresa, perfil pessoal, ou o quê?",
+    "Mais alguma exigência cósmica ou a missão tá dada?"
+  ];
+}
+
 // coleta de nome
 if (!estadoSessao.nome) {
   const nomeRegex = /(?:meu nome é|me chamo|sou o|sou a|nome[:]?)\s*([A-ZÀ-ÿ][a-zà-ÿ]+(?: [A-ZÀ-ÿ][a-zà-ÿ]+)?)/i;
@@ -248,10 +329,71 @@ if (!mensagem || typeof mensagem !== "string") {
 
 
   try {
-    // historico já definido acima com let
 if (!Array.isArray(historico)) historico = [];
-    const nomeVisitante = estadoSessao.nome || "visitante";
-    let respostaFinal = await processQuestion(mensagem, nomeVisitante, historico);
+const nomeVisitante = estadoSessao.nome || "visitante";
+
+// Corrigido para extrair a intenção corretamente
+const resultadoIntencao = detectarIntencao(mensagem);
+const intencaoDetectada = resultadoIntencao?.intencao || null;
+
+if (estadoSessao.coleta && estadoSessao.modoColeta) {
+  const etapaAtual = estadoSessao.coleta.etapa;
+
+  const tipoServico = estadoSessao.coleta.respostas[0];
+  const perguntasColeta = tipoServico ? gerarPerguntasColeta(tipoServico) : [];
+
+  // Armazena resposta da etapa atual
+  if (etapaAtual === 0) {
+    let servicoBruto = mensagem.toLowerCase();
+    servicoBruto = servicoBruto
+      .replace("quero ", "")
+      .replace("preciso de ", "")
+      .replace("fazer ", "")
+      .replace("criar ", "")
+      .replace("um ", "")
+      .replace("uma ", "")
+      .trim();
+    estadoSessao.coleta.respostas[etapaAtual] = servicoBruto;
+  } else {
+    estadoSessao.coleta.respostas[etapaAtual] = mensagem;
+  }
+
+  // Verifica se deve seguir perguntando ou finalizar
+  if (etapaAtual + 1 < perguntasColeta.length) {
+    estadoSessao.coleta.etapa++;
+    return res.json({ reply: perguntasColeta[etapaAtual + 1] });
+  }
+
+  // Finaliza coleta
+  const r = estadoSessao.coleta.respostas;
+  if (r.length >= perguntasColeta.length) {
+    estadoSessao.modoColeta = false;
+    estadoSessao.prontoPraEnviar = true;
+    estadoSessao.fasePosColeta = true;
+    estadoSessao.ultimoBriefingTextoLivre = mensagem;
+    return res.json({ reply: "Beleza! Pode descrever um pouco do que precisa? Vou direcionar ao criador e ele te enviará um e-mail sobre. :)" });
+  }
+}if (intencaoDetectada === "coleta_servico") {
+  if (!estadoSessao.coleta) {
+    estadoSessao.coleta = {
+      etapa: 0,
+      respostas: []
+    };
+  }
+
+  estadoSessao.modoColeta = true;
+
+  return res.json({
+    reply: "Fechado, mas me dá uma luz: você quer site, feed, texto, ou tudo junto e misturado?"
+  });
+}if (estadoSessao.fasePosColeta) {
+    estadoSessao.fasePosColeta = false;
+    return res.json({
+      reply: "Prontinho, disparei ao meu criador suas ideias. Quer falar sobre outra coisa ou posso voltar a dormir?"
+    });
+  }
+
+  let respostaFinal = await processQuestion(mensagem, nomeVisitante, historico);
     respostaFinal = limparPrefixos(respostaFinal);
 
     // Alternância inteligente de perguntas
@@ -272,7 +414,7 @@ if (!Array.isArray(historico)) historico = [];
       const nomeRegex = new RegExp(estadoSessao.nome, "gi");
       respostaFinal = respostaFinal.replace(nomeRegex, "").replace(/\s+/g, " ").trim();
     }
-    await enviarParaTelegram(estadoSessao.nome, mensagem, respostaFinal);
+    await enviarParaTelegram(estadoSessao.nome, estadoSessao.email, mensagem, respostaFinal);
 
 historico.push({ user: mensagem, bot: respostaFinal });
     if (historico.length > 5) historico.shift();

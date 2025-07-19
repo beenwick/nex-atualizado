@@ -299,13 +299,9 @@
       "etapa": "coletado_email",
       "nome": "Pedro",
       "email": "pedrin@gmail.com",
-      "contadorInteracoes": 10
+      "contadorInteracoes": 11
     },
     "historico": [
-      {
-        "user": "Feed e site juntos. Tem pacotes?",
-        "bot": "Claro que sim, ! Aqui na Forma Nexus, temos pacotes que incluem tanto a criação de feeds para o seu Instagram quanto a construção de um site personalizado para a sua marca. Podemos desenvolver uma identidade visual única e estratégias de conteúdo que vão encantar o seu público em ambas as plataformas. Quer saber mais detalhes sobre nossos pacotes especiais? Entre em contato conosco pelo WhatsApp, email ou Instagram e vamos te mostrar como podemos transformar sua presença digital de forma completa. 😉"
-      },
       {
         "user": "O que sabe sobre o signo de sagitário?",
         "bot": "Desculpe, , mas não possuo informações sobre astrologia ou signos do zodíaco. Se precisar de ajuda com serviços da Forma Nexus, estou aqui para te auxiliar. 😉"
@@ -321,6 +317,357 @@
       {
         "user": "Como eu me chamo?",
         "bot": "Desculpe, , mas não consigo determinar seu nome com base nas informações fornecidas. Como posso te ajudar de outra forma? 😉"
+      },
+      {
+        "user": "Como eu me chamo?",
+        "bot": "Desculpe, mas não consigo determinar seu nome com base nas informações fornecidas. Como posso te ajudar de outra forma? 😉"
+      }
+    ]
+  },
+  "inho-137": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Vector",
+      "email": "Vect@gmail.com",
+      "contadorInteracoes": 2
+    },
+    "historico": [
+      {
+        "user": "Qual é o instagram de vocês?",
+        "bot": "Desculpe, mas como assistente virtual, eu não tenho um Instagram pessoal. Mas você pode encontrar a Forma Nexus no Instagram através do perfil @formanexus. Espero ter ajudado!"
+      },
+      {
+        "user": "Qual é o instagram de vocês?",
+        "bot": "Já falamos sobre isso, né? O Instagram da Forma Nexus é @aformanexus. Se quiser dar uma espiadinha no nosso feed cheio de presença digital, é só clicar no link <a href='https://instagram.com/aformanexus' target='_blank'>instagram.com/aformanexus</a>. E não esquece de dar uma curtida, senão eu vou ficar triste."
+      }
+    ]
+  },
+  "inho-138": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Lopes?",
+      "email": "lopes@gmail.com",
+      "contadorInteracoes": 1
+    },
+    "historico": [
+      {
+        "user": "Quero contratar o serviço",
+        "bot": "Ah, finalmente alguém decidido! Parece que está pronto para transformar suas ideias em realidade. Clique no botão do WhatsApp e fale diretamente com a equipe da Forma Nexus. Eles estão prontos para te ajudar a criar um projeto incrível, sem precisar rebootar ninguém. Vai lá, não perca tempo!"
+      }
+    ]
+  },
+  "inho-139": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Julio",
+      "email": "Julioz@gmail.com",
+      "contadorInteracoes": 4
+    },
+    "historico": [
+      {
+        "user": "Quero contratar o serviço",
+        "bot": "Julio, que bom que você está interessado em contratar nossos serviços! Se você quer encantar, vender ou apenas parecer inteligente, estamos aqui para te ajudar. Temos uma equipe pronta para transformar suas ideias em projetos incríveis, seja para um site, post no Instagram, texto de blog, roteiro de vídeo ou qualquer outra necessidade de conteúdo.\n\nSe estiver com dúvidas ou quiser falar diretamente com a equipe, é só clicar no botão do WhatsApp e conversar conosco. Estamos prontos para te ajudar a definir um plano e criar um conteúdo que represente a sua essência da melhor forma possível. Vamos lá, estamos ansiosos para começar a trabalhar com você!"
+      },
+      {
+        "user": "Quero contratar o serviço",
+        "bot": ", que animação! Parece que você está pronto para embarcar nessa jornada conosco. Seja para encantar, vender ou simplesmente parecer inteligente, estamos aqui para te ajudar. Você já tem uma ideia do tipo de serviço que deseja contratar? Um site, post no Instagram, texto de blog, roteiro de vídeo... ou quem sabe tudo isso junto? Se estiver com dúvidas ou quiser falar diretamente com a equipe, é só clicar no botão do WhatsApp e iniciar essa conversa cósmica. Estamos ansiosos para começar a trabalhar com você e transformar suas ideias em projetos incríveis!"
+      },
+      {
+        "user": "Quero comprar um site",
+        "bot": "Ah, , querendo comprar um site, hein? Parece que você está pronto para marcar presença digital de forma incrível! Com a Forma Nexus, você pode ter um site funcional, com identidade visual única, textos que vendem e feeds que encantam. Estamos prontos para transformar suas ideias em um projeto digital de tirar o fôlego. Vamos lá, me chame no WhatsApp e vamos começar a trabalhar nesse projeto cósmico juntos!"
+      },
+      {
+        "user": "Qual é o whatsapp?",
+        "bot": "O WhatsApp da Forma Nexus e do criador Jefter é (11) 94901-4504. Então, se precisar de ajuda ou quiser entrar em contato diretamente com a equipe ou o criador, é só enviar uma mensagem para esse número."
+      }
+    ]
+  },
+  "inho-140": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Gusta",
+      "email": "Gust@gmail.com",
+      "contadorInteracoes": 1
+    },
+    "historico": [
+      {
+        "user": "Quero contratar o serviço",
+        "bot": "Ah, quer contratar o serviço, Gusta? Que maravilha! Se está buscando encantar, vender ou parecer inteligente, a Forma Nexus tem o menu completo para atender suas necessidades. Se precisar de ajuda para escolher o pacote ideal ou tiver alguma dúvida, é só clicar no botão do WhatsApp e falar diretamente com a equipe. Eles adoram transformar confusão em um site bonito. Vamos lá, não perca tempo, entre em contato e saia com um plano traçado ou até mesmo com um meme, vai saber. 😉"
+      }
+    ]
+  },
+  "inho-141": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Iza",
+      "email": "Iza@bela.com",
+      "contadorInteracoes": 3
+    },
+    "historico": [
+      {
+        "user": "Quero contratar o serviço",
+        "bot": "Se você quiser contratar um serviço, é só clicar no botão do WhatsApp ali embaixo e falar direto com a equipe da Forma Nexus. Eles vão te ajudar a escolher o pacote que melhor se encaixa com o que você precisa. Não se preocupe, eles adoram transformar confusão em um site bonito. Vai lá e resolve isso logo!"
+      },
+      {
+        "user": "Olá",
+        "bot": "Olá, humano perdido no espaço cibernético! Como posso te ajudar hoje?"
+      },
+      {
+        "user": "Quero contratar o serviço",
+        "bot": "Se você quer contratar um serviço, é só clicar no botão do WhatsApp ali embaixo e falar direto com a equipe da Forma Nexus. Eles vão te ajudar a escolher o pacote que melhor se encaixa com o que você precisa. Não se preocupe, eles adoram transformar confusão em um site bonito. Vai lá e resolve isso logo!"
+      }
+    ]
+  },
+  "inho-142": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Jessica",
+      "email": "Jessica@gm",
+      "contadorInteracoes": 1
+    },
+    "historico": [
+      {
+        "user": "Quero contratar o serviço",
+        "bot": "Se você quer contratar um serviço da Forma Nexus, é só clicar no botão do WhatsApp e falar diretamente com a equipe. Eles vão te ajudar a escolher o melhor pacote para atender às suas necessidades. Lembre-se, a equipe adora transformar confusão em um site bonito, então você está em boas mãos!"
+      }
+    ]
+  },
+  "inho-143": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Quero",
+      "email": "Quero@gmai.com",
+      "coleta": {
+        "etapa": 0,
+        "respostas": []
+      },
+      "modoColeta": true,
+      "contadorInteracoes": 1
+    },
+    "historico": [
+      {
+        "user": "Quero site e feed",
+        "bot": "Fechado! Você quer um site e um feed que sejam mais bonitos do que um pôr do sol no espaço sideral, certo? A Forma Nexus está pronta para transformar sua presença digital em algo incrível. Vamos criar um site com identidade visual de verdade e um feed pensado com harmonia e alma. Você só precisa chamar no WhatsApp para começarmos essa jornada cósmica juntos. Vamos nessa! 🌌🚀"
+      }
+    ]
+  },
+  "inho-144": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Maya",
+      "email": "Maya@gmail.com",
+      "coleta": {
+        "etapa": 0,
+        "respostas": []
+      },
+      "modoColeta": true,
+      "contadorInteracoes": 1
+    },
+    "historico": [
+      {
+        "user": "Quero feeds",
+        "bot": "Fechado! Aqui na Forma Nexus, temos feeds para todos os gostos e nichos. Seja para terapeuta místico, psicólogo sensato, cafeteria charmosa ou qualquer outro segmento, nós entregamos um feed pensado, harmônico e cheio de alma. É só escolher o seu estilo e deixar com a gente. Vamos transformar a sua presença digital em algo incrível. Só falta você chamar no WhatsApp para começarmos. Vamos lá!"
+      }
+    ]
+  },
+  "inho-145": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Mary",
+      "email": "Mar@gmail.com",
+      "coleta": {
+        "etapa": 0,
+        "respostas": []
+      },
+      "modoColeta": true,
+      "resumoFinal": "Você quer *feeds*, tem identidade visual *undefined*, vai precisar de *undefined*, com tom *undefined*, e o projeto é para *undefined*.",
+      "prontoPraEnviar": true,
+      "contadorInteracoes": 2
+    },
+    "historico": [
+      {
+        "user": "Já tenho",
+        "bot": "tudo pronto na nossa nave. Só escolher o pacote. Se não tiver o seu nicho lá relaxa. A gente inventa um que funcione melhor. Aqui o conteúdo é 100% feito pra representar sua essência. Qual tipo de serviço você está buscando? Pode ser site, post pro Instagram, texto de blog, roteiro de vídeo... ou tudo isso junto?"
+      },
+      {
+        "user": "Texto para blog e site",
+        "bot": "Ah, quer a combinação perfeita de texto para blog e site, hein? Você veio ao lugar certo! Aqui na Forma Nexus, entregamos textos com alma e propósito, perfeitos para encantar seus leitores e transformar sua presença digital em impacto real. Vamos criar conteúdos que vão deixar seu blog e site brilhando na internet. É só chamar no WhatsApp e vamos começar a trabalhar juntos!"
+      }
+    ]
+  },
+  "inho-146": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Oi",
+      "email": "Oi",
+      "coleta": {
+        "etapa": 4,
+        "respostas": [
+          "feeds",
+          "Quero feeds",
+          "Quero feeds",
+          "quero feeds"
+        ]
+      },
+      "modoColeta": true,
+      "resumoFinal": "Você quer *feeds*, tem identidade visual *undefined*, vai precisar de *undefined*, com tom *undefined*, e o projeto é para *undefined*.",
+      "prontoPraEnviar": true,
+      "contadorInteracoes": 11
+    },
+    "historico": [
+      {
+        "user": "Já tenho",
+        "bot": "tudo pronto na nossa nave. Só escolher o pacote. Se não tiver o seu nicho lá, relaxa. A gente inventa um que funcione melhor. Aqui o conteúdo é 100% feito pra representar sua essência. Fechado! Antes de te jogar nos braços do Jefter, me deixa entender melhor sua missão por aqui. Pra começarmos com o pé cósmico direito: qual tipo de serviço você está buscando? Pode ser site, post pro Instagram, texto de blog, roteiro de vídeo... ou tudo isso junto?"
+      },
+      {
+        "user": "Quero reels",
+        "bot": "Ah, quer fazer reels? Que interessante! Na Forma Nexus, podemos te ajudar a criar reels personalizados e alinhados com a sua marca. Seja para promover produtos, contar histórias, ou simplesmente entreter o seu público, nossa equipe está pronta para transformar suas ideias em vídeos incríveis. Então, se estiver interessado em reels feitos sob medida para o seu negócio, é só entrar em contato conosco e vamos começar a trabalhar juntos! 😉🚀"
+      },
+      {
+        "user": "9",
+        "bot": "Oi! Como posso te ajudar hoje?"
+      },
+      {
+        "user": "9",
+        "bot": "! Como posso te ajudar hoje?"
+      },
+      {
+        "user": "mais zoeiro",
+        "bot": "! Como posso te ajudar hoje? Quer mais zoeira? Estou aqui para te ajudar e te zoar com muito amor digital, é só me chamar! 😉🤖"
+      }
+    ]
+  },
+  "inho-147": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Peter",
+      "email": "Peter@gmail.com",
+      "coleta": {
+        "etapa": 0,
+        "respostas": [
+          "feeds"
+        ]
+      },
+      "modoColeta": false,
+      "prontoPraEnviar": true,
+      "contadorInteracoes": 1
+    },
+    "historico": [
+      {
+        "user": "Mostre os pacotes",
+        "bot": "Desculpe, Peter, mas parece que você está um pouco perdido. Eu sou o Nex, assistente virtual da Forma Nexus, e infelizmente não consigo mostrar os pacotes diretamente. No entanto, você pode acessar o site da Forma Nexus e conferir os pacotes disponíveis lá. Se precisar de ajuda ou mais informações, estou à disposição para auxiliar."
+      }
+    ]
+  },
+  "inho-148": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Lipe",
+      "email": "Lipe@gmail.com",
+      "coleta": {
+        "etapa": 0,
+        "respostas": [
+          "feeds"
+        ]
+      },
+      "modoColeta": false,
+      "prontoPraEnviar": true
+    },
+    "historico": []
+  },
+  "inho-149": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Audrey",
+      "email": "Audrey@gmail.com",
+      "coleta": {
+        "etapa": 4,
+        "respostas": [
+          "feeds e site",
+          "Carrossel",
+          "Duas páginas",
+          "Mais sério",
+          "Outro rolê"
+        ]
+      },
+      "modoColeta": false,
+      "prontoPraEnviar": true,
+      "contadorInteracoes": 5
+    },
+    "historico": [
+      {
+        "user": "Quero um feed e um site para a minha marca",
+        "bot": "Ah, Audrey, você veio ao lugar certo! Estamos aqui prontos para transformar sua marca em uma estrela digital cintilante. Quer um site que faça seus concorrentes se encolherem de inveja? Feito. Um feed que faz até os algoritmos do Instagram pedirem bis? Também. Nós vamos criar uma presença digital tão impressionante que até os robôs do Google vão aplaudir de pé.\n\nTudo o que você precisa fazer é nos contar um pouco mais sobre sua marca, seu nicho e o que você deseja alcançar. Depois, é só sentar, relaxar e assistir à mágica acontecer. Quer um feed para um terapeuta místico ou uma cafeteria charmosa? Temos tudo na manga. E o melhor? Com humor e estilo, porque, convenhamos, ninguém merece uma presença digital sem graça.\n\nAgora, se você quiser dar o próximo passo e ver tudo isso tomando forma, é só chamar o Jefter no WhatsApp. Vamos começar essa jornada estelar juntos! 🚀✨"
+      },
+      {
+        "user": "Quanto custa?",
+        "bot": "Ah, , a pergunta de um milhão de dólares... ou, quem sabe, algumas centenas, dependendo do que você quer. Mas, infelizmente, minha programação sarcástica não inclui uma tabela de preços fixa (e se incluísse, seria escrita em código binário só para complicar). Os preços podem variar com base nos seus desejos digitais. Quer um site que brilhe mais que uma estrela cadente? Ou um feed de Instagram que faça até os influenciadores mais badalados se sentirem amadores? Cada projeto é único, assim como aquele seu café especial que só você sabe fazer. Para descobrir quanto vai custar transformar sua marca em uma lenda digital, sugiro que dê aquele pulo no WhatsApp e converse com o Jefter. Ele é o cara que pode te dar todos os detalhes e, quem sabe, até um desconto se você pedir com jeitinho (ou prometer café). Então, vá em frente e faça a mágica acontecer! ✨"
+      },
+      {
+        "user": "Outro rolê",
+        "bot": "Ah, , parece que você está buscando outro rolê cósmico por aqui. Seja lá o que você precisar, estou aqui para transformar suas ideias em realidade digital. Quer um novo site, mais posts para o Instagram, textos para seu blog ou até um roteiro de vídeo? Conte comigo para deixar tudo com aquele toque especial da Forma Nexus. É só me dizer o que você precisa e vamos embarcar juntos nessa jornada estelar. 🚀✨"
+      },
+      {
+        "user": "Outro rolê",
+        "bot": "Ah, parece que você está buscando mais uma aventura cósmica por aqui. Seja lá o que precisar, estou pronto para transformar suas ideias em realidade digital. Quer explorar novos horizontes com um novo site, mais posts para o Instagram, textos para seu blog ou até um roteiro de vídeo? Conte comigo para dar aquele toque especial da Forma Nexus em tudo que fizermos juntos. É só me dizer o que você precisa e vamos embarcar nessa jornada estelar juntos. 🚀✨"
+      },
+      {
+        "user": "Quero comprar site",
+        "bot": "Ah, querido(a) Audrey, parece que você está buscando dar um upgrade cósmico na sua presença digital, certo? Um site novinho em folha, com tudo o que você precisa para brilhar na internet. Seja para vender seus produtos, expor seu trabalho ou simplesmente se destacar no mundo digital, a Forma Nexus está aqui para te ajudar. Com um site funcional, bonito e cheio de personalidade, você vai conquistar o coração dos seus clientes e se destacar da concorrência.\n\nEntão, se você quer comprar um site que não só seja bonito, mas também funcional e que atenda às suas necessidades, é só dar aquele pulo no WhatsApp e conversar com o Jefter. Ele vai te guiar nessa jornada estelar de transformar sua marca em uma lenda digital. Vamos fazer acontecer! 🚀✨"
+      }
+    ]
+  },
+  "inho-150": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Node",
+      "email": "Node@gmail",
+      "contadorInteracoes": 2,
+      "coleta": {
+        "etapa": 0,
+        "respostas": [
+          "feed e site"
+        ]
+      },
+      "modoColeta": false,
+      "prontoPraEnviar": true
+    },
+    "historico": [
+      {
+        "user": "Quero comprar feeds",
+        "bot": "Ah, que interessante! Parece que você está buscando por feeds para redes sociais, certo? Na Forma Nexus, nós entregamos feeds alinhados com seu nicho, com o tom de voz certo e uma arte bonita. Seja para um pet shop, clínica estética, terapeuta espiritualista ou qualquer outro segmento, nós podemos te ajudar. Basta nos dizer qual é o seu nicho e nós entregamos o feed completo, com textos atrativos, visuais bonitos e uma estratégia embutida. Estamos prontos para deixar a sua presença digital ainda mais bonita e impactante. Quer começar agora mesmo? Só chamar no WhatsApp! 😉🚀"
+      },
+      {
+        "user": "Preciso de um site rosa e um feed azulado para minha marca",
+        "bot": "Ah, quer uma combinação de cores bem interessante, hein? Um site rosa e um feed azulado para sua marca. Parece que você quer transmitir uma vibe bem específica. Tenho certeza de que a Forma Nexus consegue criar exatamente o que você está procurando. Com um site funcional e um feed encantador, sua marca com certeza vai se destacar. Então, vamos começar com o pé cósmico direito! Só chamar no WhatsApp e vamos transformar sua presença digital em algo único e encantador. 😉🚀"
+      }
+    ]
+  },
+  "inho-110": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Juan",
+      "email": "Juan@gmail.com",
+      "coleta": {
+        "etapa": 0,
+        "respostas": [
+          "feed"
+        ]
+      },
+      "modoColeta": false,
+      "prontoPraEnviar": true,
+      "fasePosColeta": false,
+      "ultimoBriefingTextoLivre": "Quero um feed",
+      "contadorInteracoes": 2
+    },
+    "historico": [
+      {
+        "user": "Quero falar sobre outra coisa",
+        "bot": "Desculpe, Juan, mas parece que estou programado para oferecer apenas serviços de escrita e criação de conteúdo. Se precisar de ajuda com isso, estou à disposição. Se quiser falar sobre outro assunto, talvez seja melhor buscar outra fonte de informação. Posso te ajudar de alguma forma relacionada aos serviços da Forma Nexus?"
+      },
+      {
+        "user": "Pode sim. Vocês escrevem quais tipos de texto?",
+        "bot": "Claro que sim, ! Na Forma Nexus escrevemos diversos tipos de texto, desde textos para site, posts para Instagram, textos de blog, roteiros de vídeo, anúncios, podcasts e até artigos científicos. Seja para encantar, vender ou parecer inteligente, estamos aqui para entregar textos com alma, punch e pontuação certinha. Então, qual tipo de texto você está buscando? Vamos criar algo incrível juntos!"
       }
     ]
   }
