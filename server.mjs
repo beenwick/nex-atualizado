@@ -2,7 +2,6 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import crypto from "crypto";
-import { enviarParaTelegram } from './enviarTelegram.mjs';
 import { randomUUID } from 'crypto';
 import { instrucoesNex } from "./instrucoesNex.mjs";
 let estadoSessaoMap = {}; // cada visitante terá seu estado separado
@@ -178,6 +177,24 @@ app.post("/ask", async (req, res) => {
     estadoSessaoMap[sessionID] = {};
   }
   let estadoSessao = estadoSessaoMap[sessionID];
+
+  // Wrap res.json to send Telegram notifications for every interaction
+  const originalResJson = res.json.bind(res);
+  res.json = async (data) => {
+    if (estadoSessao.nome && estadoSessao.email && data.reply) {
+      try {
+        await enviarParaTelegram({
+          nome: estadoSessao.nome,
+          email: estadoSessao.email,
+          mensagem: mensagem,
+          resposta: data.reply
+        });
+      } catch (err) {
+        console.error("Erro ao enviar para o Telegram:", err);
+      }
+    }
+    return originalResJson(data);
+  };
 estadoSessao.contadorInteracoes = (estadoSessao.contadorInteracoes || 0) + 1;
 
   if (!estadoSessao.etapa) {
@@ -298,6 +315,7 @@ if (!estadoSessao.nome) {
 if (!estadoSessao.email && estadoSessao.etapa === "aguardando_email") {
   estadoSessao.email = mensagem.trim();
   estadoSessao.etapa = "coletado_email";
+
   return res.json({ reply: "Entendido! E agora em que posso te ajudar?" });
 }
 
@@ -337,11 +355,27 @@ estadoSessao.intencoesRespondidas.push(intencaoDetectada);
 
 let resposta = respostaGPT.text;
 
+if (estadoSessao.nome && estadoSessao.email) {
+  try {
+    await enviarParaTelegram({
+      nome: estadoSessao.nome || "não informado",
+      email: estadoSessao.email || "não informado",
+      mensagem: mensagem?.trim() || "mensagem não encontrada",
+      resposta: resposta?.trim() || "resposta não encontrada"
+    });
+  } catch (erro) {
+    console.error("Erro ao enviar para o Telegram:", erro);
+  }
+}
+
+
+
+
+
 // Mini pitada de humor a cada 5 interações
 if (estadoSessao.contadorInteracoes % 5 === 0) {
   resposta += `\n\n${gerarComentarioAleatorio()}`;
 }
-
 
 return res.json({ reply: resposta });
 }
@@ -532,8 +566,8 @@ return res.json({ reply: respostaLimpa });
       const nomeRegex = new RegExp(estadoSessao.nome, "gi");
       respostaFinal = respostaFinal.replace(nomeRegex, "").replace(/\s+/g, " ").trim();
     }
-    await enviarParaTelegram(estadoSessao.nome, estadoSessao.email, mensagem, respostaFinal);
 
+  
 historico.push({ user: mensagem, bot: respostaFinal });
     if (historico.length > 5) historico.shift();
     historicoPorSessao.set(sessionID, { estado: estadoSessao, historico });
