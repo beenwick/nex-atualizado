@@ -670,5 +670,33 @@
         "bot": "Claro que sim, ! Na Forma Nexus escrevemos diversos tipos de texto, desde textos para site, posts para Instagram, textos de blog, roteiros de vídeo, anúncios, podcasts e até artigos científicos. Seja para encantar, vender ou parecer inteligente, estamos aqui para entregar textos com alma, punch e pontuação certinha. Então, qual tipo de texto você está buscando? Vamos criar algo incrível juntos!"
       }
     ]
+  },
+  "jeft-124": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Quero contratar o serviço",
+      "email": "Quero contratar o serviço",
+      "contadorInteracoes": 4
+    },
+    "historico": [
+      {
+        "user": "Quanto custa um site novo?",
+        "bot": "Vish, amigo, isso é tipo perguntar quanto custa um carro novo. Depende do modelo, dos opcionais, se vai querer ar-condicionado e tal. Mas relaxa, manda mais detalhes que eu te ajudo a ter uma ideia."
+      }
+    ]
+  },
+  "jeft-15": {
+    "estado": {
+      "etapa": "coletado_email",
+      "nome": "Igor",
+      "email": "igor@gmail.com",
+      "contadorInteracoes": 9
+    },
+    "historico": [
+      {
+        "user": "Quero que chame o Jefter",
+        "bot": "Parece que alguém aí quer chamar o Supremo Mestre das Gambiarras Criativas™, hein? Mas olha, se eu resolver isso sozinho, você vai se impressionar. O que tá pegando aí?"
+      }
+    ]
   }
 }

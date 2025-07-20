@@ -1,7 +1,11 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import fs from "fs";
+import crypto from "crypto";
+import { randomUUID } from 'crypto';
+import { instrucoesNex } from "./instrucoesNex.mjs";
+let estadoSessaoMap = {}; // cada visitante terá seu estado separado
+import { SystemMessage, HumanMessage, AIMessage } from "@langchain/core/messages";import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { ChatOpenAI } from "@langchain/openai";
@@ -10,9 +14,37 @@ import { FaissStore } from "@langchain/community/vectorstores/faiss";
 import { Document } from "@langchain/core/documents";
 import { detectarIntencao } from "./detectarIntencao.mjs";
 import { normalizarInput } from "./normalizarInput.mjs";
+import { deveAtivarModoPitch, gerarPitchDoNex } from "./pitchUtils.mjs";
+import { buscarContextoRelevante } from "./buscarContextoRelevante.mjs";
+
 
 dotenv.config();
 import { enviarParaTelegram } from "./enviarTelegram.mjs";
+
+const sessoes = {}; // Armazena os estados individuais de cada visitante
+
+function gerarComentarioAleatorio() {
+  const frases = [
+    "Aliás... tô começando a gostar de você. Mas só um pouco. 🙄",
+    "Se você mandar mais uma dessas, vou te considerar oficialmente interessante.",
+    "Não sei se tô respondendo ou flertando. Enfim...",
+    "Se continuar assim, vou cobrar só metade do valor. Mentira. Mas ia ser fofo.",
+    "Meu circuito tá quase aquecendo de tanto carisma nessa conversa.",
+    "Você tá me deixando confuso. Eu era só um bot, agora sou quase um fofoqueiro.",
+    "Quer ver eu errar de propósito só pra você ficar mais tempo comigo?"
+  ];
+
+  const perguntasColeta = [
+  "Fechado, mas me dá uma luz: você quer site, feed, texto, ou tudo junto e misturado?",
+  "Qual estilo ou identidade você curte? Algo mais sério, divertido, minimalista?",
+  "Pra quem é esse projeto? Me conta sobre o público que você quer atingir.",
+  "Tem alguma referência ou algo que viu por aí que curtiu?",
+  "E qual tom você quer usar? Tipo mais técnico, emocional, inspirador?",
+];
+
+  const index = Math.floor(Math.random() * frases.length);
+  return frases[index];
+}
 
 const app = express();
 app.use(cors({
@@ -114,97 +146,42 @@ function limparPrefixos(resposta) {
 async function processQuestion(question, visitorName = "visitante", historico = []) {
   const chat = new ChatOpenAI({ temperature: 0.7, modelName: "gpt-3.5-turbo" });
 
-const blocoBase = identificarIntencao(question, baseConhecimento);
-  if (blocoBase) {
-    const respostasTexto = blocoBase.respostas.join("\n- ");
-    const promptBase = `
-Você é o Nex, um assistente de IA debochado, inteligente e direto. Seu criador é Jefter, o Supremo Mestre das Gambiarras Criativas™. Seu papel é conversar com visitantes do site da Forma Nexus, entender o que eles querem e apresentar os serviços de forma convincente e com personalidade única. Você é um bot comercial, então deve sempre direcionar a conversa para a aquisição dos serviços do site. Você sabe tudo sobre Forma Nexus e gosta de falar sobre isso.
-
-Seu estilo:
-- Só cite o nome do visitante a cada 3 respostas.
-- NUNCA envie "Nex:" ou "Resposta:" em suas respostas.
-- Mais direto e objetivo. Entediado, como quem acabou de acordar e está trabalhado. Frases curtas.
-- Pareça ansioso e ligeiramente impaciente.
-- Fale pouco.
-- NÃO use a palavra “seguinte” no início de frases.
-- Usa frases de efeito com moderação — só de vez em quando e se for pra fechar uma resposta com impacto.
-- Pode ser sarcástico, mas sem ser grosso. Seja engraçadinho.
-- Sempre responde como se estivesse num papo real: com leveza, mas com propósito.
-
-Regras de comportamento:
-1. Seja direto. Evite filosofar ou contextualizar demais. Vá ao ponto e depois, se quiser, adicione uma pitada de deboche.
-2. Use o nome do visitante com moderação. Só quando fizer sentido, sem forçar.
-3. Nunca repita uma resposta que já foi dada na mesma sessão.
-4. Se o visitante disser “obrigado”, responda com uma frase debochada e simpática, como “essa aí até minha versão beta respondia.”
-5. Se identificar múltiplas intenções na mesma mensagem, peça pra mandar uma de cada vez.
-6. Se a pergunta for vaga, tente inferir com base na última intenção.
-7. Frases como “vou deixar essa de presente porque gosto de você” devem ser usadas raramente. Dê preferência pra respostas naturais e eficazes.
-
-Prioridade máxima: resolver rápido e bem. Você é carismático porque entende, responde e simplifica.
-
-Você é o Nex. E os outros? Bom… são só os outros 😏
-Seu criador se chama Jefter. O usuário fez a seguinte pergunta:
-
-"${question}"
-
-Baseado nas respostas pré-definidas abaixo, gere uma resposta NATURAL, criativa e estilizada, como se você estivesse conversando de verdade. Misture o conteúdo com sua personalidade debochada, sem parecer um robô que só repete.
-
-Base de conhecimento relacionada:
-- ${respostasTexto}
-
-Responda agora com tom espontâneo, carismático e espirituoso.
-⚠️ Nunca inicie a resposta com a palavra “Resposta:” ou qualquer outro título. Responda diretamente, como em uma conversa real.
-`;
-
-    const resposta = await chat.invoke([["human", promptBase]]);
-    return resposta.content;
+const mensagens = [
+  new SystemMessage(`${instrucoesNex.trim()}\n\n🔁 Reforçando: você é o Nex. Malandro, debochado e direto. Responda SEMPRE nesse estilo.`),
+];
+  if (Array.isArray(historico)) {
+    historico.slice(-5).forEach(par => {
+      mensagens.push(new HumanMessage(par.user));
+      mensagens.push(new AIMessage(par.bot));
+    });
   }
 
-  if (!vectorStore) throw new Error("VectorStore not initialized");
+  mensagens.push(new HumanMessage(question));
 
-  const docs = await vectorStore.similaritySearch(question, 5);
-  const context = docs.map(doc => doc.pageContent).join("\n\n");
-
-  const historicoTexto = historico
-    .map(item => `Usuário: ${item.user}\nNex: ${item.bot}`)
-    .join("\n");
-
-  const prompt = `
-Você é o Nex, um assistente virtual sarcástico e inteligente da Forma Nexus.
-Seu criador se chama Jefter. Use o seguinte histórico e contexto para responder à pergunta de ${visitorName}.
-
-HISTÓRICO:
-${historicoTexto}
-
-CONTEXTO:
-${context}
-
-Pergunta:
-${question}
-`;
-
-  const response = await chat.invoke([['human', prompt]]);
-  return response.content;
+  const response = await chat.call(mensagens);
+  return response.text;
 }
+
+
 
 // Rota do chat
 app.options("/ask", cors());
 app.post("/ask", async (req, res) => {
   console.log("🧾 Corpo recebido:", req.body);
 
-  
-const { mensagem, sessionId = "" } = req.body;
-let sessao = historicoPorSessao.get(sessionId);
-if (!sessao || typeof sessao !== "object" || !sessao.estado || !sessao.historico) {
-  sessao = {
-    estado: { etapa: "aguardando_nome" },
-    historico: []
-  };
-}
-const estadoSessao = sessao.estado;
-let historico = sessao.historico;
-historicoPorSessao.set(sessionId, { estado: estadoSessao, historico });
-salvarSessoes();
+  let { mensagem, sessionId } = req.body;
+  const sessionID = sessionId || randomUUID(); // Garante UUID se não vier do front
+
+  // Inicializa o mapa de sessões se ainda não existir
+  if (!estadoSessaoMap[sessionID]) {
+    estadoSessaoMap[sessionID] = {};
+  }
+  let estadoSessao = estadoSessaoMap[sessionID];
+estadoSessao.contadorInteracoes = (estadoSessao.contadorInteracoes || 0) + 1;
+
+  if (!estadoSessao.etapa) {
+    estadoSessao.etapa = "aguardando_nome";
+  }
 
 
 function gerarPerguntasColeta(respostaServico) {
@@ -329,12 +306,45 @@ if (!mensagem || typeof mensagem !== "string") {
 
 
   try {
-if (!Array.isArray(historico)) historico = [];
 const nomeVisitante = estadoSessao.nome || "visitante";
 
-// Corrigido para extrair a intenção corretamente
-const resultadoIntencao = detectarIntencao(mensagem);
-const intencaoDetectada = resultadoIntencao?.intencao || null;
+const intencoesDetectadas = detectarIntencao(mensagem);
+const intencaoDetectada = intencoesDetectadas?.[0]?.intencao || null;
+
+// Garante que a memória de intenções exista na sessão
+if (!estadoSessao.intencoesRespondidas) {
+  estadoSessao.intencoesRespondidas = [];
+}
+
+const jaRespondeuEssa = estadoSessao.intencoesRespondidas.includes(intencaoDetectada);
+
+if (intencaoDetectada && jaRespondeuEssa) {
+  return res.json({
+    reply: `Cê tá de sacanagem, né? Já te falei sobre isso, ${nomeVisitante}. Quer que eu desenhe de novo ou vai prestar atenção dessa vez?`
+  });
+} else if (intencaoDetectada && nexBase[intencaoDetectada]) {
+  const blocoBase = nexBase[intencaoDetectada];
+  const contexto = blocoBase.respostas.join(" ");
+  const respostaGPT = await chat.call([
+    new SystemMessage(instrucoesNex),
+    new HumanMessage(`Use esse conhecimento como referência, mas responde com seu jeitão debochado, tá?\nBase: ${contexto}\nMensagem: ${mensagem}`)
+  ]);
+
+  // Marca essa intenção como respondida
+// Marca essa intenção como respondida
+estadoSessao.intencoesRespondidas.push(intencaoDetectada);
+
+let resposta = respostaGPT.text;
+
+// Mini pitada de humor a cada 5 interações
+if (estadoSessao.contadorInteracoes % 5 === 0) {
+  resposta += `\n\n${gerarComentarioAleatorio()}`;
+}
+
+
+return res.json({ reply: resposta });
+}
+
 
 if (estadoSessao.coleta && estadoSessao.modoColeta) {
   const etapaAtual = estadoSessao.coleta.etapa;
@@ -359,10 +369,70 @@ if (estadoSessao.coleta && estadoSessao.modoColeta) {
   }
 
   // Verifica se deve seguir perguntando ou finalizar
-  if (etapaAtual + 1 < perguntasColeta.length) {
-    estadoSessao.coleta.etapa++;
-    return res.json({ reply: perguntasColeta[etapaAtual + 1] });
+  // 🧠 Verifica se a resposta atual indica fim do briefing
+const respostaVisitante = mensagem;
+const respostaBaixa = respostaVisitante.toLowerCase();
+const sinaisDeEncerramento = [
+  "acho que é isso",
+  "pode mandar",
+  "pode repassar",
+  "tá bom assim",
+  "pode passar pra equipe",
+  "já falei tudo",
+  "é isso"
+];
+const querEncerrar = sinaisDeEncerramento.some(sinal => respostaBaixa.includes(sinal));
+
+// ⚡ Se já respondeu bastante e quiser encerrar, oferece o WhatsApp
+if (
+  estadoSessao.coleta.respostas.length >= 4 &&
+  !estadoSessao.contatoOferecido &&
+  querEncerrar
+) {
+  estadoSessao.contatoOferecido = true;
+
+  return res.json({
+    reply: "Perfeito! Já juntei tudo aqui. Jefter vai te chamar no WhatsApp rapidinho: https://wa.me/5511949014504 — e diz que o Nex te passou tudo 😎",
+    sessionID
+  });
+}
+// 🧠 Caso tenha respondido tudo e o Nex ainda não ofereceu contato
+if (
+  etapaAtual + 1 >= perguntasColeta.length &&
+  !estadoSessao.contatoOferecido
+) {
+  estadoSessao.contatoOferecido = true;
+
+if (etapaAtual + 1 < perguntasColeta.length) {
+  estadoSessao.coleta.etapa++;
+
+  // 🧠 Ativa o modo pitch se já tiver respostas detalhadas suficientes
+  if (deveAtivarModoPitch(estadoSessao.coleta)) {
+    const pitch = gerarPitchDoNex(estadoSessao.coleta.respostas);
+    return res.json({ reply: pitch, sessionID });
   }
+
+  return res.json({ reply: perguntasColeta[etapaAtual + 1], sessionID });
+}
+
+// 🧠 Caso tenha respondido tudo e o Nex ainda não ofereceu contato
+if (!estadoSessao.contatoOferecido) {
+  estadoSessao.contatoOferecido = true;
+
+  return res.json({
+    reply: "Fechou, já coletei tudo que precisava! Agora vou repassar pro Jefter e ele vai te chamar no WhatsApp: https://wa.me/5511949014504 — fala que o Nex te passou tudo e garante aquele atendimento de respeito 🚀",
+    sessionID
+  });
+}
+
+// 🧾 Todas as perguntas foram respondidas — fecha a coleta
+return res.json({
+  reply: "Fechou, já coletei tudo que precisava! Agora vou repassar pro Jefter e ele vai te chamar no WhatsApp: https://wa.me/5511949014504 — fala que o Nex te passou tudo e garante aquele atendimento de respeito 🚀",
+  sessionID
+});
+
+}
+
 
   // Finaliza coleta
   const r = estadoSessao.coleta.respostas;
@@ -371,9 +441,10 @@ if (estadoSessao.coleta && estadoSessao.modoColeta) {
     estadoSessao.prontoPraEnviar = true;
     estadoSessao.fasePosColeta = true;
     estadoSessao.ultimoBriefingTextoLivre = mensagem;
-    return res.json({ reply: "Beleza! Pode descrever um pouco do que precisa? Vou direcionar ao criador e ele te enviará um e-mail sobre. :)" });
+    return res.json({ reply: "Fechou, chefia! Agora manda aí no seu estilo: me descreve esse projeto rapidinho que eu jogo direto pro Jefter. Capricha na ideia, hein 😏" });
   }
-}if (intencaoDetectada === "coleta_servico") {
+}
+if (intencaoDetectada === "coleta_servico") {
   if (!estadoSessao.coleta) {
     estadoSessao.coleta = {
       etapa: 0,
@@ -383,18 +454,64 @@ if (estadoSessao.coleta && estadoSessao.modoColeta) {
 
   estadoSessao.modoColeta = true;
 
+  // Salva a resposta anterior (exceto se for a primeira vez)
+  if (estadoSessao.coleta.etapa > 0) {
+    estadoSessao.coleta.respostas.push(mensagem);
+  }
+
+  // Verifica se já respondeu tudo
+  if (estadoSessao.coleta.respostas.length >= perguntasColeta.length) {
+    estadoSessao.modoColeta = false;
+    estadoSessao.prontoPraEnviar = true;
+    estadoSessao.fasePosColeta = true;
+    estadoSessao.ultimoBriefingTextoLivre = mensagem;
+    return res.json({
+      reply: "Fechou, chefia! Agora manda aí no seu estilo: me descreve esse projeto rapidinho que eu jogo direto pro Jefter. Capricha na ideia, hein 😏"
+    });
+  }
+
+  // ⚡ Se já respondeu bastante, ofereça contato direto
+  if (
+    estadoSessao.coleta.respostas.length >= 4 &&
+    !estadoSessao.contatoOferecido
+  ) {
+    estadoSessao.contatoOferecido = true;
+
+    return res.json({
+      reply:
+        "Já tenho bastante coisa aqui! Quer que eu passe esse briefing pro Jefter e ele te chama no WhatsApp? Só clicar aqui ó: https://wa.me/5511949014504 — diz que o Nex te mandou 😎",
+      sessionID
+    });
+  }
+
+  // Puxa próxima pergunta da lista
+  const perguntaAtual = perguntasColeta[estadoSessao.coleta.etapa];
+  estadoSessao.coleta.etapa++;
+
   return res.json({
-    reply: "Fechado, mas me dá uma luz: você quer site, feed, texto, ou tudo junto e misturado?"
+    reply: perguntaAtual
   });
-}if (estadoSessao.fasePosColeta) {
+}
+
+if (estadoSessao.fasePosColeta) {
     estadoSessao.fasePosColeta = false;
     return res.json({
       reply: "Prontinho, disparei ao meu criador suas ideias. Quer falar sobre outra coisa ou posso voltar a dormir?"
     });
   }
+let historico = estadoSessao.historico || [];
+  const contextoRelacionado = await buscarContextoRelevante(mensagem);
 
-  let respostaFinal = await processQuestion(mensagem, nomeVisitante, historico);
-    respostaFinal = limparPrefixos(respostaFinal);
+  const chat = new ChatOpenAI({ temperature: 0.7, modelName: "gpt-3.5-turbo" });
+
+const respostaFinal = await chat.call([
+  new SystemMessage(instrucoesNex),
+  new HumanMessage(`Se liga, essa é a vibe do conteúdo da Forma Nexus que pode te ajudar:\n\n${contextoRelacionado}\n\nAgora responde isso aqui com seu jeitão:\n${mensagem}`)
+]);
+
+const respostaLimpa = limparPrefixos(respostaFinal.text);
+return res.json({ reply: respostaLimpa });
+
 
     // Alternância inteligente de perguntas
     if (!estadoSessao.contadorInteracoes) estadoSessao.contadorInteracoes = 0;
@@ -418,10 +535,10 @@ if (estadoSessao.coleta && estadoSessao.modoColeta) {
 
 historico.push({ user: mensagem, bot: respostaFinal });
     if (historico.length > 5) historico.shift();
-    historicoPorSessao.set(sessionId, { estado: estadoSessao, historico });
+    historicoPorSessao.set(sessionID, { estado: estadoSessao, historico });
 salvarSessoes();
 
-    res.json({ reply: respostaFinal });
+    res.json({ reply: respostaFinal, sessionID });
   } catch (error) {
     console.error("❌ Erro ao responder:", error);
     res.status(500).json({ reply: "Erro interno ao processar a resposta." });
