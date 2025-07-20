@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import crypto from "crypto";
+import { enviarParaTelegram } from './enviarTelegram.mjs';
 import { randomUUID } from 'crypto';
 import { instrucoesNex } from "./instrucoesNex.mjs";
 let estadoSessaoMap = {}; // cada visitante terá seu estado separado
